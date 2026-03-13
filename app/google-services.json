@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "757564282301",
+    "project_id": "myadvancedschedule",
+    "storage_bucket": "myadvancedschedule.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:757564282301:android:fe260f1874ddb2fbb06ed4",
+        "android_client_info": {
+          "package_name": "com.example.myadvancedschedule"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADgkM8VKv4biBM24Xkc8m5DDCSzRH0U0g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
