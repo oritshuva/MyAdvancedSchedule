@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <EditText
+        android:id="@+id/etSubject"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Subject"/>
+
+    <EditText
+        android:id="@+id/etStartTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Start Time (e.g., 09:00)"/>
+
+    <EditText
+        android:id="@+id/etEndTime"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="End Time (e.g., 10:00)"/>
+
+    <Spinner
+        android:id="@+id/spDay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <ArrayAdapter
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/days_array" />
+    </Spinner>
+</LinearLayout>
