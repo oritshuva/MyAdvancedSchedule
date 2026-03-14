@@ -11,6 +11,8 @@ public class Lesson implements Serializable {
     private int period;
     private String startTime;
     private String endTime;
+    /** "school" (default) or "after_school" */
+    private String scheduleType;
 
     // Constructor for new lessons (without ID)
     public Lesson(String subject, String teacher, String classroom, String day, int period, String startTime, String endTime) {
@@ -37,6 +39,14 @@ public class Lesson implements Serializable {
 
     // Empty constructor for Firestore
     public Lesson() {
+    }
+
+    public String getScheduleType() {
+        return scheduleType != null ? scheduleType : "school";
+    }
+
+    public void setScheduleType(String scheduleType) {
+        this.scheduleType = scheduleType;
     }
 
     // Getters

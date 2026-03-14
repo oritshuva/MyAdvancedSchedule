@@ -92,4 +92,24 @@
     <string name="error_update_lesson">שגיאה בעדכון השיעור</string>
     <string name="error_delete_lesson">שגיאה במחיקת השיעור</string>
     <string name="error_load_lessons">שגיאה בטעינת השיעורים</string>
+
+    <!-- Main tabs -->
+    <string name="tab_tasks">Tasks</string>
+    <string name="tab_school">School</string>
+    <string name="tab_after_school">After School</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Today’s Tasks</string>
+    <string name="task_add">Add task</string>
+    <string name="task_title_hint">Task title</string>
+    <string name="task_due_hint">Due time (e.g. 14:30)</string>
+    <string name="no_tasks">No tasks yet</string>
+    <string name="add_first_task">Tap + to add a task</string>
+
+    <!-- School schedule -->
+    <string name="school_schedule_title">School Schedule</string>
+    <string name="after_school_title">After School Schedule</string>
+    <string name="no_lessons_today">No lessons today</string>
+    <string name="add_first_lesson">Add a lesson from the main menu</string>
+    <string name="lesson_time_format">%1$s – %2$s</string>
 </resources>
