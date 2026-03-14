@@ -7,8 +7,9 @@
     <string name="edit_lesson">ערוך שיעור</string>
     <string name="delete_lesson">מחק שיעור</string>
 
-    <!-- Authentication -->
+    <!-- Authentication / Welcome -->
     <string name="welcome_back">Welcome back</string>
+    <string name="welcome_subtitle">Manage your weekly schedule and tasks</string>
     <string name="login">Login</string>
     <string name="create_account">Create account</string>
     <string name="login_title">התחברות</string>
@@ -92,7 +93,7 @@
     <string name="setup_teacher_hint">Teacher</string>
     <string name="setup_classroom_hint">Classroom</string>
 
-    <!-- Days Array -->
+    <!-- Days Array (Hebrew) -->
     <string-array name="days_array">
         <item>ראשון</item>
         <item>שני</item>
@@ -101,6 +102,19 @@
         <item>חמישי</item>
         <item>שישי</item>
     </string-array>
+    <!-- Days for lesson dialog (English, match Firestore) -->
+    <string-array name="days_array_english">
+        <item>Sunday</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+    </string-array>
+    <!-- Subject dropdown -->
+    <string name="subject_other">Other…</string>
+    <string name="subject_other_hint">Enter new subject name</string>
 
     <!-- Firestore Messages -->
     <string name="error_saving_lesson">Error saving lesson</string>
@@ -132,4 +146,5 @@
     <string name="add_first_lesson">Add a lesson from the main menu</string>
     <string name="lesson_time_format">%1$s – %2$s</string>
     <string name="lesson_icon">Lesson</string>
+    <string name="logout">Logout</string>
 </resources>

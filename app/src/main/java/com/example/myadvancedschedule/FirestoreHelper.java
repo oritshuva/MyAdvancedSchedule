@@ -16,6 +16,7 @@ public class FirestoreHelper {
     private FirebaseAuth mAuth;
     private static final String COLLECTION_LESSONS = "lessons";
     private static final String COLLECTION_TASKS = "tasks";
+    private static final String COLLECTION_SUBJECTS = "subjects";
 
     public FirestoreHelper() {
         db = FirebaseFirestore.getInstance();
@@ -228,6 +229,67 @@ public class FirestoreHelper {
                 .document(taskId)
                 .delete()
                 .addOnSuccessListener(aVoid -> listener.onSuccess())
+                .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
+    }
+
+    // ---------- Subjects (for dropdown reuse) ----------
+    public interface OnSubjectsLoadedListener {
+        void onSubjectsLoaded(List<String> subjectNames);
+        void onError(String error);
+    }
+
+    /** Load subject names for the current user (subjects collection + unique from lessons). */
+    public void getSubjects(OnSubjectsLoadedListener listener) {
+        String userId = getUserId();
+        if (userId == null) {
+            listener.onError("User not logged in");
+            return;
+        }
+        List<String> names = new ArrayList<>();
+        db.collection(COLLECTION_SUBJECTS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    for (QueryDocumentSnapshot doc : snap) {
+                        String name = doc.getString("name");
+                        if (name != null && !name.trim().isEmpty() && !names.contains(name.trim()))
+                            names.add(name.trim());
+                    }
+                    // Also add unique subjects from existing lessons
+                    db.collection(COLLECTION_LESSONS)
+                            .whereEqualTo("userId", userId)
+                            .get()
+                            .addOnSuccessListener(lessonSnap -> {
+                                for (QueryDocumentSnapshot doc : lessonSnap) {
+                                    String s = doc.getString("subject");
+                                    if (s != null && !s.trim().isEmpty() && !names.contains(s.trim()))
+                                        names.add(s.trim());
+                                }
+                                java.util.Collections.sort(names);
+                                listener.onSubjectsLoaded(names);
+                            })
+                            .addOnFailureListener(e -> listener.onSubjectsLoaded(names));
+                })
+                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+    }
+
+    /** Add a new subject so it appears in the dropdown next time. */
+    public void addSubject(String userId, String subjectName, OnOperationCompleteListener listener) {
+        if (userId == null) {
+            listener.onFailure("User not logged in");
+            return;
+        }
+        String name = subjectName != null ? subjectName.trim() : "";
+        if (name.isEmpty()) {
+            listener.onFailure("Subject name is empty");
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", userId);
+        data.put("name", name);
+        db.collection(COLLECTION_SUBJECTS)
+                .add(data)
+                .addOnSuccessListener(ref -> listener.onSuccess())
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
     }
 }

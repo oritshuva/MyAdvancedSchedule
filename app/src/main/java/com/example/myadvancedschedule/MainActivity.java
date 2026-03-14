@@ -89,7 +89,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_logout) {
+        int id = item.getItemId();
+        if (id == R.id.action_add_lesson) {
+            AddLessonDialogFragment dialog = AddLessonDialogFragment.newInstance();
+            dialog.setOnLessonSavedListener(() -> { /* Fragments refresh on onResume */ });
+            dialog.show(getSupportFragmentManager(), "AddLesson");
+            return true;
+        }
+        if (id == R.id.action_logout) {
             logout();
             return true;
         }
