@@ -15,13 +15,14 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * Setup wizard: Step 1 = FrameSetupFragment, Step 2 = ViewPager2 of DayScheduleFragment per day.
+ * On save, writes each lesson to Firestore via FirestoreHelper (lessons collection).
+ */
 public class SetupScheduleActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
@@ -30,26 +31,23 @@ public class SetupScheduleActivity extends AppCompatActivity {
     private ProgressBar progressBar;
 
     private List<Fragment> fragments = new ArrayList<>();
-    private Map<String, Integer> lessonsPerDay = new HashMap<>();
-    private Map<String, List<Lesson>> scheduleData = new HashMap<>();
-
-    private String[] days = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"};
+    private FrameSetupData frameData;
     private int currentStep = 0;
-    private int totalSteps = 6; // 1 selection page + 5 days
+    private int totalSteps = 1;
 
-    private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private FirestoreHelper firestoreHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setup_schedule);
 
-        db = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
+        firestoreHelper = new FirestoreHelper();
 
         initViews();
-        setupViewPager();
+        setupStep1();
         setupNavigationButtons();
     }
 
@@ -61,14 +59,21 @@ public class SetupScheduleActivity extends AppCompatActivity {
         tvSubtitle = findViewById(R.id.tvSubtitle);
         progressBar = findViewById(R.id.progressBar);
 
-        // Disable user swiping - navigation only via buttons
         viewPager.setUserInputEnabled(false);
+        // Swiping enabled in Step 2 when day fragments are shown
+        progressBar.setMax(1);
+        progressBar.setProgress(1);
+    }
+
+    private void setupStep1() {
+        fragments.clear();
+        fragments.add(new FrameSetupFragment());
+        totalSteps = 1;
+        setupViewPager();
+        updateUI();
     }
 
     private void setupViewPager() {
-        // Add selection fragment (first page)
-        fragments.add(new SelectLessonsCountFragment());
-
         viewPager.setAdapter(new FragmentStateAdapter(this) {
             @NonNull
             @Override
@@ -98,136 +103,168 @@ public class SetupScheduleActivity extends AppCompatActivity {
 
     private void handleNext() {
         if (currentStep == 0) {
-            // Validate and get lesson counts
-            SelectLessonsCountFragment fragment = (SelectLessonsCountFragment) fragments.get(0);
-            lessonsPerDay = fragment.getLessonCounts();
-
-            if (lessonsPerDay.isEmpty() || !validateLessonCounts()) {
-                Toast.makeText(this, "Please select at least one lesson for each day", Toast.LENGTH_SHORT).show();
+            FrameSetupFragment fragment = (FrameSetupFragment) fragments.get(0);
+            frameData = fragment.getFrameSetupData();
+            if (frameData == null) {
+                Toast.makeText(this, getString(R.string.setup_error_select_days), Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (frameData.getSelectedDays().isEmpty()) {
+                Toast.makeText(this, getString(R.string.setup_error_select_days), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            buildDayFragments();
+            viewPager.setAdapter(new FragmentStateAdapter(this) {
+                @NonNull
+                @Override
+                public Fragment createFragment(int position) {
+                    return fragments.get(position);
+                }
 
-            // Generate fragments for each day
-            generateDayFragments();
-            viewPager.getAdapter().notifyDataSetChanged();
+                @Override
+                public int getItemCount() {
+                    return fragments.size();
+                }
+            });
             viewPager.setCurrentItem(1, true);
-
+            currentStep = 1;
+            totalSteps = fragments.size();
+            progressBar.setMax(totalSteps);
+            progressBar.setProgress(2);
+            viewPager.setUserInputEnabled(true);
+            updateUI();
         } else if (currentStep < totalSteps - 1) {
-            // Save current day's data
-            FillLessonsFragment fragment = (FillLessonsFragment) fragments.get(currentStep);
-            List<Lesson> lessons = fragment.getLessons();
-
-            if (!validateLessons(lessons)) {
-                Toast.makeText(this, "Please fill all lesson details", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            String dayName = days[currentStep - 1];
-            scheduleData.put(dayName, lessons);
-
             viewPager.setCurrentItem(currentStep + 1, true);
-
+            progressBar.setProgress(currentStep + 2);
+            updateUI();
         } else {
-            // Last step - save to Firebase
-            saveScheduleToFirebase();
+            saveScheduleToFirestore();
         }
     }
 
     private void handlePrevious() {
         if (currentStep > 0) {
             viewPager.setCurrentItem(currentStep - 1, true);
+            progressBar.setProgress(currentStep);
+            updateUI();
         }
     }
 
-    private void generateDayFragments() {
+    private void buildDayFragments() {
         fragments.clear();
-        fragments.add(new SelectLessonsCountFragment()); // Keep selection page
+        fragments.add(new FrameSetupFragment());
 
-        for (String day : days) {
-            int lessonCount = lessonsPerDay.get(day);
-            FillLessonsFragment fragment = FillLessonsFragment.newInstance(day, lessonCount);
-            fragments.add(fragment);
+        ArrayList<TimeSlot> slots = computeTimeSlots(
+                frameData.getStartTime(),
+                frameData.getLessonDurationMinutes(),
+                frameData.getBreakDurationMinutes(),
+                frameData.getMaxLessons()
+        );
+
+        for (String day : frameData.getSelectedDays()) {
+            fragments.add(DayScheduleFragment.newInstance(day, slots));
         }
-
-        totalSteps = fragments.size();
-        progressBar.setMax(totalSteps);
     }
 
-    private boolean validateLessonCounts() {
-        for (Integer count : lessonsPerDay.values()) {
-            if (count == null || count <= 0) {
-                return false;
-            }
+    /**
+     * Computes time slots from start time, lesson duration, break duration, and max lessons.
+     * e.g. 08:00, 45, 10, 8 -> 08:00-08:45, 08:55-09:40, ...
+     */
+    static ArrayList<TimeSlot> computeTimeSlots(String startTime, int lessonMin, int breakMin, int maxLessons) {
+        ArrayList<TimeSlot> result = new ArrayList<>();
+        int[] start = parseTime(startTime);
+        if (start == null) return result;
+        int hour = start[0];
+        int minute = start[1];
+
+        for (int i = 0; i < maxLessons; i++) {
+            String startStr = formatTime(hour, minute);
+            minute += lessonMin;
+            hour += minute / 60;
+            minute = minute % 60;
+            String endStr = formatTime(hour, minute);
+            result.add(new TimeSlot(startStr, endStr));
+            minute += breakMin;
+            hour += minute / 60;
+            minute = minute % 60;
         }
-        return true;
+        return result;
     }
 
-    private boolean validateLessons(List<Lesson> lessons) {
-        if (lessons == null || lessons.isEmpty()) {
-            return false;
-        }
-
-        for (Lesson lesson : lessons) {
-            if (lesson.getSubject() == null || lesson.getSubject().trim().isEmpty() ||
-                    lesson.getStartTime() == null || lesson.getStartTime().trim().isEmpty() ||
-                    lesson.getEndTime() == null || lesson.getEndTime().trim().isEmpty()) {
-                return false;
-            }
-        }
-        return true;
+    private static int[] parseTime(String time) {
+        if (time == null || !time.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")) return null;
+        String[] parts = time.split(":");
+        return new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1])};
     }
 
-    private void saveScheduleToFirebase() {
-        String userId = auth.getCurrentUser().getUid();
+    private static String formatTime(int hour, int minute) {
+        return String.format("%02d:%02d", hour % 24, minute % 60);
+    }
 
-        Map<String, Object> scheduleMap = new HashMap<>();
-        for (Map.Entry<String, List<Lesson>> entry : scheduleData.entrySet()) {
-            String day = entry.getKey();
-            List<Lesson> lessons = entry.getValue();
-
-            List<Map<String, Object>> lessonsList = new ArrayList<>();
-            for (Lesson lesson : lessons) {
-                Map<String, Object> lessonMap = new HashMap<>();
-                lessonMap.put("subject", lesson.getSubject());
-                lessonMap.put("startTime", lesson.getStartTime());
-                lessonMap.put("endTime", lesson.getEndTime());
-                lessonMap.put("periodNumber", lesson.getPeriodNumber());
-                lessonsList.add(lessonMap);
-            }
-
-            scheduleMap.put(day, lessonsList);
+    private void saveScheduleToFirestore() {
+        String userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+        if (userId == null) {
+            Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
+            return;
         }
 
-        db.collection("users").document(userId).collection("schedule")
-                .document("weekSchedule")
-                .set(scheduleMap)
-                .addOnSuccessListener(aVoid -> {
-                    Toast.makeText(this, "Schedule saved successfully! 🎉", Toast.LENGTH_LONG).show();
-                    startActivity(new Intent(this, MainActivity.class));
-                    finish();
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error saving schedule: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
+        progressBar.setVisibility(View.VISIBLE);
+        btnNext.setEnabled(false);
+
+        List<Lesson> allLessons = new ArrayList<>();
+        for (int i = 1; i < fragments.size(); i++) {
+            Fragment f = fragments.get(i);
+            if (f instanceof DayScheduleFragment) {
+                allLessons.addAll(((DayScheduleFragment) f).getLessons());
+            }
+        }
+
+        saveLessonsOneByOne(userId, allLessons, 0);
+    }
+
+    private void saveLessonsOneByOne(String userId, List<Lesson> lessons, int index) {
+        if (index >= lessons.size()) {
+            progressBar.setVisibility(View.GONE);
+            btnNext.setEnabled(true);
+            Toast.makeText(this, "Schedule saved successfully!", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, MainActivity.class));
+            finish();
+            return;
+        }
+        Lesson lesson = lessons.get(index);
+        firestoreHelper.addLesson(userId, lesson, new FirestoreHelper.OnOperationCompleteListener() {
+            @Override
+            public void onSuccess() {
+                saveLessonsOneByOne(userId, lessons, index + 1);
+            }
+
+            @Override
+            public void onFailure(String error) {
+                progressBar.setVisibility(View.GONE);
+                btnNext.setEnabled(true);
+                Toast.makeText(SetupScheduleActivity.this, "Error saving: " + error, Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void updateUI() {
-        // Update progress
         progressBar.setProgress(currentStep + 1);
-        tvSubtitle.setText("Step " + (currentStep + 1) + " of " + totalSteps);
+        progressBar.setMax(Math.max(1, totalSteps));
+        tvSubtitle.setText(getString(R.string.setup_step_format, currentStep + 1, totalSteps));
 
-        // Update title
         if (currentStep == 0) {
-            tvTitle.setText("Create Your Schedule");
+            tvTitle.setText("Step 1 — Weekly frame");
         } else {
-            tvTitle.setText("Fill " + days[currentStep - 1] + " Lessons");
+            String dayName = frameData != null && currentStep - 1 < frameData.getSelectedDays().size()
+                    ? frameData.getSelectedDays().get(currentStep - 1)
+                    : "Day";
+            tvTitle.setText("Step 2 — " + dayName);
         }
 
-        // Update buttons
         btnPrevious.setVisibility(currentStep > 0 ? View.VISIBLE : View.GONE);
 
-        if (currentStep == totalSteps - 1) {
-            btnNext.setText("Save Schedule");
+        if (currentStep == totalSteps - 1 && totalSteps > 1) {
+            btnNext.setText("Save schedule");
             btnNext.setIcon(getDrawable(android.R.drawable.ic_menu_save));
         } else {
             btnNext.setText("Next");

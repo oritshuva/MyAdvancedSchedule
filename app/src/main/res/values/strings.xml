@@ -1,12 +1,95 @@
 <resources>
     <string name="app_name">MyAdvancedSchedule</string>
+
+    <!-- Main Activity -->
+    <string name="empty_lessons">אין שיעורים להצגה</string>
+    <string name="add_lesson">הוסף שיעור</string>
+    <string name="edit_lesson">ערוך שיעור</string>
+    <string name="delete_lesson">מחק שיעור</string>
+
+    <!-- Authentication -->
+    <string name="login_title">התחברות</string>
+    <string name="register_title">הרשמה</string>
+    <string name="hint_name">שם מלא</string>
+    <string name="hint_email">אימייל</string>
+    <string name="hint_password">סיסמה</string>
+    <string name="hint_confirm_password">אימות סיסמה</string>
+    <string name="btn_login">התחבר</string>
+    <string name="btn_register">הירשם</string>
+    <string name="already_have_account">כבר יש לך חשבון? התחבר כאן</string>
+    <string name="dont_have_account">אין לך חשבון? הירשם כאן</string>
+
+    <!-- Validation Messages -->
+    <string name="error_empty_name">נא להזין שם מלא</string>
+    <string name="error_empty_email">נא להזין אימייל</string>
+    <string name="error_empty_password">נא להזין סיסמה</string>
+    <string name="error_short_password">הסיסמה חייבת להכיל לפחות 6 תווים</string>
+    <string name="error_password_mismatch">הסיסמאות אינן תואמות</string>
+
+    <!-- Success/Error Messages -->
+    <string name="login_success">התחברת בהצלחה</string>
+    <string name="login_failed">ההתחברות נכשלה</string>
+    <string name="register_success">נרשמת בהצלחה</string>
+    <string name="register_failed">ההרשמה נכשלה</string>
+
+    <!-- Lesson Dialog -->
+    <string name="dialog_title_add">הוסף שיעור חדש</string>
+    <string name="dialog_title_edit">ערוך שיעור</string>
+    <string name="hint_lesson_name">שם השיעור</string>
+    <string name="hint_teacher_name">שם המורה</string>
+    <string name="hint_room_number">מספר כיתה</string>
+    <string name="hint_select_day">בחר יום</string>
+    <string name="hint_start_time">שעת התחלה</string>
+    <string name="hint_end_time">שעת סיום</string>
+    <string name="btn_save">שמור</string>
+    <string name="btn_cancel">ביטול</string>
+
+    <!-- Lesson Details -->
+    <string name="teacher">מורה: %s</string>
+    <string name="room">כיתה: %s</string>
+    <string name="time">%s - %s</string>
+
+    <!-- Setup wizard - Step 1 -->
+    <string name="setup_step1_title">Weekly frame setup</string>
+    <string name="setup_which_days">Which days do you study?</string>
+    <string name="setup_start_time">When does the school day start? (e.g. 08:00)</string>
+    <string name="setup_lesson_duration">How long is each lesson? (minutes)</string>
+    <string name="setup_break_duration">Average break length? (minutes)</string>
+    <string name="setup_max_lessons">Maximum lessons in the longest day?</string>
+    <string name="day_sunday">Sunday</string>
+    <string name="day_monday">Monday</string>
+    <string name="day_tuesday">Tuesday</string>
+    <string name="day_wednesday">Wednesday</string>
+    <string name="day_thursday">Thursday</string>
+    <string name="day_friday">Friday</string>
+    <string name="day_saturday">Saturday</string>
+    <string name="setup_error_select_days">Select at least one day</string>
+    <string name="setup_error_invalid_time">Enter a valid start time (e.g. 08:00)</string>
+    <string name="setup_error_invalid_number">Enter a valid number</string>
+    <string name="setup_step_format">Step %1$d of %2$d</string>
+
+    <!-- Setup wizard - Step 2 -->
+    <string name="setup_lesson_card_time">Lesson %1$d (%2$s)</string>
+    <string name="setup_subject_hint">Subject</string>
+    <string name="setup_teacher_hint">Teacher</string>
+    <string name="setup_classroom_hint">Classroom</string>
+
+    <!-- Days Array -->
     <string-array name="days_array">
-        <item>Sunday</item>
-        <item>Monday</item>
-        <item>Tuesday</item>
-        <item>Wednesday</item>
-        <item>Thursday</item>
-        <item>Friday</item>
-        <item>Saturday</item>
+        <item>ראשון</item>
+        <item>שני</item>
+        <item>שלישי</item>
+        <item>רביעי</item>
+        <item>חמישי</item>
+        <item>שישי</item>
     </string-array>
+
+    <!-- Firestore Messages -->
+    <string name="lesson_added">השיעור נוסף בהצלחה</string>
+    <string name="lesson_updated">השיעור עודכן בהצלחה</string>
+    <string name="lesson_deleted">השיעור נמחק בהצלחה</string>
+    <string name="error_add_lesson">שגיאה בהוספת השיעור</string>
+    <string name="error_update_lesson">שגיאה בעדכון השיעור</string>
+    <string name="error_delete_lesson">שגיאה במחיקת השיעור</string>
+    <string name="error_load_lessons">שגיאה בטעינת השיעורים</string>
 </resources>
