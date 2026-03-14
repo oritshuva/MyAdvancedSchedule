@@ -1,44 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_margin="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="4dp">
 
-    <TextView
-        android:id="@+id/tvPeriod"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Period"
-        android:textSize="18sp" />
-
-    <TextInputLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Subject">
-        <EditText
-            android:id="@+id/etSubject"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </TextInputLayout>
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Start Time">
         <EditText
-            android:id="@+id/etStartTime"
+            android:id="@+id/editSubject"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </TextInputLayout>
+            android:layout_height="wrap_content"
+            android:hint="Subject"
+            android:textSize="16sp"/>
 
-    <TextInputLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="End Time">
         <EditText
-            android:id="@+id/etEndTime"
+            android:id="@+id/editTeacher"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </TextInputLayout>
-</LinearLayout>
+            android:layout_height="wrap_content"
+            android:hint="Teacher"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+
+        <EditText
+            android:id="@+id/editClassroom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Classroom"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -5,11 +5,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
 
 public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.LessonViewHolder> {
@@ -24,7 +21,7 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
     @NonNull
     @Override
     public LessonViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_lesson_edit, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_edit_lesson, parent, false);
         return new LessonViewHolder(view);
     }
 
@@ -32,27 +29,10 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
     public void onBindViewHolder(@NonNull LessonViewHolder holder, int position) {
         Lesson lesson = lessons.get(position);
 
-        holder.tvPeriod.setText("Period " + lesson.getPeriodNumber());
-        holder.etSubject.setText(lesson.getSubject());
-        holder.etStartTime.setText(lesson.getStartTime());
-        holder.etEndTime.setText(lesson.getEndTime());
-
-        // Save data when user inputs
-        holder.etSubject.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                lesson.setSubject(holder.etSubject.getText().toString());
-            }
-        });
-        holder.etStartTime.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                lesson.setStartTime(holder.etStartTime.getText().toString());
-            }
-        });
-        holder.etEndTime.setOnFocusChangeListener((v, hasFocus) -> {
-            if (!hasFocus) {
-                lesson.setEndTime(holder.etEndTime.getText().toString());
-            }
-        });
+        // קביעת ערכים בהתאם לשיעור
+        holder.editLessonName.setText(lesson.getName());
+        holder.editTeacherName.setText(lesson.getTeacher());
+        holder.editRoomNumber.setText(lesson.getRoom());
     }
 
     @Override
@@ -60,20 +40,16 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
         return lessons.size();
     }
 
-    public List<Lesson> getLessons() {
-        return lessons;
-    }
-
-    static class LessonViewHolder extends RecyclerView.ViewHolder {
-        TextView tvPeriod;
-        EditText etSubject, etStartTime, etEndTime;
+    class LessonViewHolder extends RecyclerView.ViewHolder {
+        EditText editLessonName;
+        EditText editTeacherName;
+        EditText editRoomNumber;
 
         public LessonViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvPeriod = itemView.findViewById(R.id.tvPeriod);
-            etSubject = itemView.findViewById(R.id.etSubject);
-            etStartTime = itemView.findViewById(R.id.etStartTime);
-            etEndTime = itemView.findViewById(R.id.etEndTime);
+            editLessonName = itemView.findViewById(R.id.editLessonName);
+            editTeacherName = itemView.findViewById(R.id.editTeacherName);
+            editRoomNumber = itemView.findViewById(R.id.editRoomNumber);
         }
     }
 }
