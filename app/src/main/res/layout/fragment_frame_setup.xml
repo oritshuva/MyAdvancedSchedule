@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_step1_title"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Which days do you study? -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/setup_which_days"
+            android:textSize="14sp"
+            android:textColor="@color/black"
+            android:layout_marginBottom="12dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <CheckBox
+                android:id="@+id/checkSunday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_sunday"
+                android:checked="true"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkMonday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_monday"
+                android:checked="true"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkTuesday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_tuesday"
+                android:checked="true"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkWednesday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_wednesday"
+                android:checked="true"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkThursday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_thursday"
+                android:checked="true"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkFriday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_friday"
+                android:checked="false"
+                android:paddingVertical="8dp" />
+            <CheckBox
+                android:id="@+id/checkSaturday"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/day_saturday"
+                android:checked="false"
+                android:paddingVertical="8dp" />
+        </LinearLayout>
+
+        <!-- Start time -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutStartTime"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:hint="@string/setup_start_time">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editStartTime"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="time"
+                android:text="08:00" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Lesson duration -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutLessonDuration"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/setup_lesson_duration">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editLessonDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:text="45" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Break duration -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutBreakDuration"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/setup_break_duration">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editBreakDuration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:text="10" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Max lessons -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layoutMaxLessons"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="@string/setup_max_lessons">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/editMaxLessons"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:text="8" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="24dp" />
+
+    </LinearLayout>
+</ScrollView>
