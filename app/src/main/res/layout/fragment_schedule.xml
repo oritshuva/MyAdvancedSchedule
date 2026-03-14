@@ -27,7 +27,7 @@
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:alpha="0.5"
-            android:contentDescription="@null"
+            android:contentDescription="@string/no_lessons_today"
             android:src="@drawable/ic_school" />
         <TextView
             android:id="@+id/textEmptyTitle"

@@ -42,10 +42,10 @@ public class FillLessonsFragment extends Fragment {
             lessonCount = getArguments().getInt(ARG_LESSON_COUNT);
         }
 
-        // Initialize lessons
+        // Initialize lessons with placeholder times (valid Lesson constructor)
         lessons = new ArrayList<>();
         for (int i = 1; i <= lessonCount; i++) {
-            lessons.add(new Lesson(dayName, i, "", "", ""));
+            lessons.add(new Lesson("", "", "", dayName, i, "08:00", "08:45"));
         }
     }
 

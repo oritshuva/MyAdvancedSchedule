@@ -182,7 +182,7 @@ public class AddLessonDialogFragment extends DialogFragment {
                 @Override
                 public void onFailure(String error) {
                     if (getContext() != null) {
-                        Toast.makeText(getContext(), R.string.error_saving_lesson + ": " + error, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), getString(R.string.error_saving_lesson) + ": " + error, Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -203,7 +203,7 @@ public class AddLessonDialogFragment extends DialogFragment {
                 @Override
                 public void onFailure(String error) {
                     if (getContext() != null) {
-                        Toast.makeText(getContext(), R.string.error_saving_lesson + ": " + error, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), getString(R.string.error_saving_lesson) + ": " + error, Toast.LENGTH_SHORT).show();
                     }
                 }
             });

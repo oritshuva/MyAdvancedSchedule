@@ -28,7 +28,7 @@
             android:layout_width="96dp"
             android:layout_height="96dp"
             android:alpha="0.6"
-            android:contentDescription="@null"
+            android:contentDescription="@string/no_tasks"
             android:src="@drawable/ic_task_list" />
         <TextView
             android:layout_width="wrap_content"
