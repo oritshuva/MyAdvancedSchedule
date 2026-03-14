@@ -25,6 +25,11 @@
     <string name="error_empty_password">נא להזין סיסמה</string>
     <string name="error_short_password">הסיסמה חייבת להכיל לפחות 6 תווים</string>
     <string name="error_password_mismatch">הסיסמאות אינן תואמות</string>
+    <string name="error_empty_subject">Please enter a subject</string>
+    <string name="error_empty_teacher">Please enter a teacher</string>
+    <string name="error_empty_classroom">Please enter a classroom</string>
+    <string name="error_invalid_period">Please enter a valid period number</string>
+    <string name="error_invalid_time">Please enter a valid time</string>
 
     <!-- Success/Error Messages -->
     <string name="login_success">התחברת בהצלחה</string>
@@ -33,6 +38,10 @@
     <string name="register_failed">ההרשמה נכשלה</string>
 
     <!-- Lesson Dialog -->
+    <string name="add_lesson_title">Add lesson</string>
+    <string name="edit_lesson_title">Edit lesson</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
     <string name="dialog_title_add">הוסף שיעור חדש</string>
     <string name="dialog_title_edit">ערוך שיעור</string>
     <string name="hint_lesson_name">שם השיעור</string>
@@ -85,6 +94,7 @@
     </string-array>
 
     <!-- Firestore Messages -->
+    <string name="error_saving_lesson">Error saving lesson</string>
     <string name="lesson_added">השיעור נוסף בהצלחה</string>
     <string name="lesson_updated">השיעור עודכן בהצלחה</string>
     <string name="lesson_deleted">השיעור נמחק בהצלחה</string>
