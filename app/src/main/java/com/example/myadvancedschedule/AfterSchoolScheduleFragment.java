@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -14,13 +15,22 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class AfterSchoolScheduleFragment extends Fragment {
 
     private RecyclerView recyclerLessons;
     private LinearLayout emptyView;
     private ProgressBar progressBar;
+    private TextView textDayTitle;
+    private TextView textDateSubtitle;
+    private TextView textInfoMessage;
+    private FloatingActionButton fabAddEvent;
     private LessonCardAdapter adapter;
     private FirestoreHelper firestoreHelper;
 
@@ -32,10 +42,39 @@ public class AfterSchoolScheduleFragment extends Fragment {
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
         emptyView = view.findViewById(R.id.emptyView);
         progressBar = view.findViewById(R.id.progressBar);
+        textDayTitle = view.findViewById(R.id.textDayTitle);
+        textDateSubtitle = view.findViewById(R.id.textDateSubtitle);
+        textInfoMessage = view.findViewById(R.id.textInfoMessage);
+        fabAddEvent = view.findViewById(R.id.fabAddEvent);
+
         firestoreHelper = new FirestoreHelper();
         adapter = new LessonCardAdapter();
+        adapter.setShareEnabled(true, lesson -> {
+            String title = lesson.getSubject() != null ? lesson.getSubject() : getString(R.string.after_school_title);
+            String time = "";
+            if (lesson.getStartTime() != null || lesson.getEndTime() != null) {
+                String start = lesson.getStartTime() != null ? lesson.getStartTime() : "";
+                String end = lesson.getEndTime() != null ? lesson.getEndTime() : "";
+                time = start.isEmpty() && end.isEmpty() ? "" : start + " – " + end;
+            }
+            String location = lesson.getClassroom() != null ? lesson.getClassroom() : "";
+            StringBuilder shareText = new StringBuilder();
+            shareText.append(title);
+            if (!time.isEmpty()) {
+                shareText.append(" (").append(time).append(")");
+            }
+            if (!location.isEmpty()) {
+                shareText.append(" @ ").append(location);
+            }
+
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(android.content.Intent.EXTRA_TEXT, shareText.toString());
+            startActivity(android.content.Intent.createChooser(intent, null));
+        });
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
+        configureHeaderAndFab();
         loadLessons();
         return view;
     }
@@ -44,6 +83,32 @@ public class AfterSchoolScheduleFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadLessons();
+    }
+
+    private void configureHeaderAndFab() {
+        String today = ScheduleFragmentHelper.getTodayDayName();
+        if (textDayTitle != null) {
+            String title = getString(R.string.today_after_school_title, today);
+            textDayTitle.setText(title);
+        }
+        if (textDateSubtitle != null) {
+            String dateStr = new SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+                    .format(new Date());
+            textDateSubtitle.setText(dateStr);
+        }
+        if (textInfoMessage != null) {
+            textInfoMessage.setVisibility(View.VISIBLE);
+            textInfoMessage.setText(R.string.after_school_info_message);
+        }
+        if (fabAddEvent != null) {
+            fabAddEvent.setVisibility(View.VISIBLE);
+            fabAddEvent.setOnClickListener(v -> {
+                AddAfterSchoolEventDialogFragment dialog =
+                        AddAfterSchoolEventDialogFragment.newInstance();
+                dialog.setOnEventSavedListener(this::loadLessons);
+                dialog.show(getParentFragmentManager(), "AddAfterSchoolEvent");
+            });
+        }
     }
 
     private void loadLessons() {

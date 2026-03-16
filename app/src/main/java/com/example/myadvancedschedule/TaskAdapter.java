@@ -3,7 +3,9 @@ package com.example.myadvancedschedule;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.content.Intent;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,6 +21,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public interface OnTaskActionListener {
         void onTaskCheckedChanged(Task task, boolean completed);
+        void onTaskDeleted(Task task);
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -50,6 +53,28 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.textTaskTitle.setAlpha(isChecked ? 0.6f : 1f);
             if (listener != null) listener.onTaskCheckedChanged(task, isChecked);
         });
+
+        holder.buttonDelete.setOnClickListener(v -> {
+            int adapterPosition = holder.getAdapterPosition();
+            if (adapterPosition != RecyclerView.NO_POSITION && listener != null) {
+                Task toDelete = tasks.get(adapterPosition);
+                listener.onTaskDeleted(toDelete);
+            }
+        });
+
+        holder.buttonShare.setOnClickListener(v -> {
+            String title = task.getTitle() != null ? task.getTitle() : "";
+            String due = task.getDueTime() != null ? task.getDueTime() : "";
+            String text = v.getContext().getString(R.string.task_shared_text, title, due);
+            Intent sendIntent = new Intent(Intent.ACTION_SEND);
+            sendIntent.setType("text/plain");
+            sendIntent.putExtra(Intent.EXTRA_TEXT, text);
+            v.getContext().startActivity(Intent.createChooser(sendIntent, null));
+        });
+
+        holder.buttonReminder.setOnClickListener(v -> {
+            ReminderUtils.showImmediateTaskReminder(v.getContext(), task);
+        });
     }
 
     @Override
@@ -60,12 +85,16 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         CheckBox checkCompleted;
         TextView textTaskTitle, textDueTime;
+        ImageButton buttonShare, buttonReminder, buttonDelete;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
             checkCompleted = itemView.findViewById(R.id.checkCompleted);
             textTaskTitle = itemView.findViewById(R.id.textTaskTitle);
             textDueTime = itemView.findViewById(R.id.textDueTime);
+            buttonShare = itemView.findViewById(R.id.buttonShare);
+            buttonReminder = itemView.findViewById(R.id.buttonReminder);
+            buttonDelete = itemView.findViewById(R.id.buttonDelete);
         }
     }
 }

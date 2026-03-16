@@ -6,6 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -14,13 +15,18 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class SchoolScheduleFragment extends Fragment {
 
     private RecyclerView recyclerLessons;
     private LinearLayout emptyView;
     private ProgressBar progressBar;
+    private TextView textDayTitle;
+    private TextView textDateSubtitle;
     private LessonCardAdapter adapter;
     private FirestoreHelper firestoreHelper;
 
@@ -32,10 +38,14 @@ public class SchoolScheduleFragment extends Fragment {
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
         emptyView = view.findViewById(R.id.emptyView);
         progressBar = view.findViewById(R.id.progressBar);
+        textDayTitle = view.findViewById(R.id.textDayTitle);
+        textDateSubtitle = view.findViewById(R.id.textDateSubtitle);
+
         firestoreHelper = new FirestoreHelper();
         adapter = new LessonCardAdapter();
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
+        configureHeader();
         loadLessons();
         return view;
     }
@@ -44,6 +54,19 @@ public class SchoolScheduleFragment extends Fragment {
     public void onResume() {
         super.onResume();
         loadLessons();
+    }
+
+    private void configureHeader() {
+        String today = ScheduleFragmentHelper.getTodayDayName();
+        if (textDayTitle != null) {
+            String title = getString(R.string.today_schedule_title, today);
+            textDayTitle.setText(title);
+        }
+        if (textDateSubtitle != null) {
+            String dateStr = new SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+                    .format(new Date());
+            textDateSubtitle.setText(dateStr);
+        }
     }
 
     private void loadLessons() {

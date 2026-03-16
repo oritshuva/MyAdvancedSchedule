@@ -38,18 +38,38 @@ public class TasksFragment extends Fragment {
         fabAddTask = view.findViewById(R.id.fabAddTask);
         firestoreHelper = new FirestoreHelper();
         adapter = new TaskAdapter();
-        adapter.setOnTaskActionListener((task, completed) -> {
-            String uid = FirebaseAuth.getInstance().getCurrentUser() != null
-                    ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
-            if (uid != null)
-                firestoreHelper.updateTask(uid, task, new FirestoreHelper.OnOperationCompleteListener() {
+        adapter.setOnTaskActionListener(new TaskAdapter.OnTaskActionListener() {
+            @Override
+            public void onTaskCheckedChanged(Task task, boolean completed) {
+                String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                        ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                if (uid != null) {
+                    firestoreHelper.updateTask(uid, task, new FirestoreHelper.OnOperationCompleteListener() {
+                        @Override
+                        public void onSuccess() { }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onTaskDeleted(Task task) {
+                firestoreHelper.deleteTask(task.getId(), new FirestoreHelper.OnOperationCompleteListener() {
                     @Override
-                    public void onSuccess() { }
+                    public void onSuccess() {
+                        loadTasks();
+                    }
+
                     @Override
                     public void onFailure(String error) {
                         Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
                     }
                 });
+            }
         });
         recyclerTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerTasks.setAdapter(adapter);
