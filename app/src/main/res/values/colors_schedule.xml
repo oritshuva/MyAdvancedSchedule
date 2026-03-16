@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Default color for subject indicator when no specific color is chosen -->
+    <color name="colorSubjectDefault">#FFB74D</color>
+</resources>
+
