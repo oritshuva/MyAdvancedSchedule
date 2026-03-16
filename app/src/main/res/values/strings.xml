@@ -133,6 +133,7 @@
 
     <!-- Tasks -->
     <string name="tasks_title">Today’s Tasks</string>
+    <string name="tasks_header_subtitle">Track your important tasks for today.</string>
     <string name="task_add">Add task</string>
     <string name="task_title_hint">Task title</string>
     <string name="task_due_hint">Due time (e.g. 14:30)</string>
@@ -147,4 +148,29 @@
     <string name="lesson_time_format">%1$s – %2$s</string>
     <string name="lesson_icon">Lesson</string>
     <string name="logout">Logout</string>
+
+    <!-- Schedule headers -->
+    <string name="today_schedule_title">%1$s - Today Schedule</string>
+    <string name="today_after_school_title">%1$s - After School Schedule</string>
+
+    <!-- Lesson card formatting -->
+    <string name="lesson_number_format">Lesson %1$d</string>
+    <string name="lesson_subject_format">Subject: %1$s</string>
+    <string name="lesson_teacher_format">Teacher: %1$s</string>
+    <string name="lesson_classroom_format">Classroom: %1$s</string>
+    <string name="free_period_label">Free period / חלון</string>
+
+    <!-- After school info -->
+    <string name="after_school_info_message">You can add events and activities that happen after school such as homework, sports, meetings, or personal plans.</string>
+    <string name="after_school_add_event">Add Event</string>
+    <string name="after_school_add_event_title">Add after-school event</string>
+    <string name="after_school_add_event_validation">Please enter a title and time for the event</string>
+    <string name="after_school_add_event_success">Event added to your after-school schedule</string>
+
+    <!-- Tasks actions -->
+    <string name="task_delete">Delete task</string>
+    <string name="task_share">Share task</string>
+    <string name="task_reminder">Reminder</string>
+    <string name="task_shared_text">%1$s (due: %2$s)</string>
+
 </resources>
