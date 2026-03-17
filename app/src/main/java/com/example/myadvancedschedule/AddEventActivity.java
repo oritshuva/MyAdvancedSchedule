@@ -73,7 +73,19 @@ public class AddEventActivity extends AppCompatActivity {
                     true);
             dialog.show();
         });
-        etReminder.setOnClickListener(v -> showDateTimePicker());
+        etReminder.setOnClickListener(v -> {
+            ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
+            dialog.setOnReminderConfirmedListener((triggerAtMillis, noteText) -> {
+                reminderTriggerAtMillis = triggerAtMillis;
+                // Show chosen date/time in the reminder field for user feedback.
+                java.text.DateFormat df =
+                        new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault());
+                etReminder.setText(df.format(new java.util.Date(triggerAtMillis)));
+                // Also keep the note text in the local UI field so it will be saved with the event.
+                etNote.setText(noteText);
+            });
+            dialog.show(getSupportFragmentManager(), "EventReminderDialog");
+        });
     }
 
     private void setupButtons() {
@@ -82,40 +94,8 @@ public class AddEventActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(v -> finish());
     }
 
-    private void showTimePicker(TextInputEditText editText, int year, int month, int dayOfMonth) {
-        java.util.Calendar now = java.util.Calendar.getInstance();
-        TimePickerDialog timePickerDialog = new TimePickerDialog(this,
-                (view, hourOfDay, minute) -> {
-                    java.util.Calendar selected = java.util.Calendar.getInstance();
-                    selected.set(java.util.Calendar.YEAR, year);
-                    selected.set(java.util.Calendar.MONTH, month);
-                    selected.set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth);
-                    selected.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay);
-                    selected.set(java.util.Calendar.MINUTE, minute);
-                    selected.set(java.util.Calendar.SECOND, 0);
-                    selected.set(java.util.Calendar.MILLISECOND, 0);
-                    long triggerAt = selected.getTimeInMillis();
-                    if (triggerAt <= System.currentTimeMillis()) {
-                        Toast.makeText(this, R.string.reminder_time_in_past, Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    reminderTriggerAtMillis = triggerAt;
-                    String text = String.format("%02d/%02d/%04d %02d:%02d",
-                            dayOfMonth, month + 1, year, hourOfDay, minute);
-                    editText.setText(text);
-                }, now.get(java.util.Calendar.HOUR_OF_DAY), now.get(java.util.Calendar.MINUTE), true);
-        timePickerDialog.show();
-    }
-
-    private void showDateTimePicker() {
-        java.util.Calendar now = java.util.Calendar.getInstance();
-        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
-                (view, year, month, dayOfMonth) -> showTimePicker(etReminder, year, month, dayOfMonth),
-                now.get(java.util.Calendar.YEAR),
-                now.get(java.util.Calendar.MONTH),
-                now.get(java.util.Calendar.DAY_OF_MONTH));
-        datePickerDialog.show();
-    }
+    // Legacy date/time picker methods for reminders have been replaced
+    // by the unified ReminderDialogFragment used across the app.
 
     private void loadEventData() {
         if (currentEvent != null) {

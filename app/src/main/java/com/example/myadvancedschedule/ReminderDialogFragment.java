@@ -48,50 +48,60 @@ public class ReminderDialogFragment extends DialogFragment {
 
         Calendar now = Calendar.getInstance();
         datePicker.updateDate(now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH));
-        timePicker.setIs24HourView(true);
-        timePicker.setHour(now.get(Calendar.HOUR_OF_DAY));
-        timePicker.setMinute(now.get(Calendar.MINUTE));
+        // Defensive initialization in case of OEM-specific TimePicker quirks.
+        if (timePicker != null) {
+            timePicker.setIs24HourView(true);
+            timePicker.setHour(now.get(Calendar.HOUR_OF_DAY));
+            timePicker.setMinute(now.get(Calendar.MINUTE));
+        }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setView(view)
                 .setPositiveButton(R.string.reminder_save, (dialog, which) -> {
-                    if (listener == null) return;
+                    if (listener == null || getContext() == null) return;
+                    try {
+                        int year = datePicker.getYear();
+                        int month = datePicker.getMonth();
+                        int day = datePicker.getDayOfMonth();
 
-                    int year = datePicker.getYear();
-                    int month = datePicker.getMonth();
-                    int day = datePicker.getDayOfMonth();
+                        int hour = 0;
+                        int minute = 0;
+                        if (timePicker != null) {
+                            hour = timePicker.getHour();
+                            minute = timePicker.getMinute();
+                        }
 
-                    int hour;
-                    int minute;
-                    hour = timePicker.getHour();
-                    minute = timePicker.getMinute();
+                        Calendar selected = Calendar.getInstance();
+                        selected.set(Calendar.YEAR, year);
+                        selected.set(Calendar.MONTH, month);
+                        selected.set(Calendar.DAY_OF_MONTH, day);
+                        selected.set(Calendar.HOUR_OF_DAY, hour);
+                        selected.set(Calendar.MINUTE, minute);
+                        selected.set(Calendar.SECOND, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
 
-                    Calendar selected = Calendar.getInstance();
-                    selected.set(Calendar.YEAR, year);
-                    selected.set(Calendar.MONTH, month);
-                    selected.set(Calendar.DAY_OF_MONTH, day);
-                    selected.set(Calendar.HOUR_OF_DAY, hour);
-                    selected.set(Calendar.MINUTE, minute);
-                    selected.set(Calendar.SECOND, 0);
-                    selected.set(Calendar.MILLISECOND, 0);
-
-                    long triggerAt = selected.getTimeInMillis();
-                    if (triggerAt <= System.currentTimeMillis()) {
-                        if (getContext() != null) {
+                        long triggerAt = selected.getTimeInMillis();
+                        if (triggerAt <= System.currentTimeMillis()) {
                             android.widget.Toast.makeText(
                                     getContext(),
                                     R.string.reminder_time_in_past,
                                     android.widget.Toast.LENGTH_SHORT
                             ).show();
+                            return;
                         }
-                        return;
-                    }
 
-                    String note = "";
-                    if (editReminderNote.getText() != null) {
-                        note = editReminderNote.getText().toString().trim();
+                        String note = "";
+                        if (editReminderNote != null && editReminderNote.getText() != null) {
+                            note = editReminderNote.getText().toString().trim();
+                        }
+                        listener.onReminderConfirmed(triggerAt, note);
+                    } catch (Exception e) {
+                        android.widget.Toast.makeText(
+                                getContext(),
+                                R.string.error_load_lessons,
+                                android.widget.Toast.LENGTH_SHORT
+                        ).show();
                     }
-                    listener.onReminderConfirmed(triggerAt, note);
                 })
                 .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss());
 
