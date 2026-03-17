@@ -93,11 +93,30 @@ public class TasksFragment extends Fragment {
             @Override
             public void onTaskReminderRequested(Task task) {
                 if (!isAdded()) return;
-                ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
+                TaskReminderDialogFragment dialog = TaskReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
                     if (!isAdded()) return;
-                    ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt, noteText);
-                    Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                    String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                            ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                    if (uid == null) {
+                        Toast.makeText(requireContext(), R.string.login_failed, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    // Persist reminder metadata on the task, then schedule the notification.
+                    task.setReminderTimeMillis(triggerAt);
+                    task.setReminderDetail(noteText);
+                    firestoreHelper.updateTask(uid, task, new FirestoreHelper.OnOperationCompleteListener() {
+                        @Override
+                        public void onSuccess() {
+                            ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt, noteText);
+                            Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 });
                 dialog.show(getParentFragmentManager(), "TaskReminderDialog");
             }
