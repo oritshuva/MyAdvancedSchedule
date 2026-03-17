@@ -163,7 +163,7 @@ public class AddEventActivity extends AppCompatActivity {
                     .set(event)
                     .addOnSuccessListener(aVoid -> {
                         if (reminderTriggerAtMillis > 0) {
-                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis);
+                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis, event.getNote());
                         }
                         Toast.makeText(this, "האירוע עודכן בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();
@@ -177,7 +177,7 @@ public class AddEventActivity extends AppCompatActivity {
                     .addOnSuccessListener(documentReference -> {
                         event.setId(documentReference.getId());
                         if (reminderTriggerAtMillis > 0) {
-                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis);
+                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis, event.getNote());
                         }
                         Toast.makeText(this, "האירוע נוסף בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();

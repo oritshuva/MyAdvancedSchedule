@@ -175,6 +175,9 @@
     <string name="task_shared_text">%1$s (due: %2$s)</string>
     <string name="reminder_scheduled">Reminder scheduled</string>
     <string name="reminder_time_in_past">Please choose a time in the future</string>
+    <string name="reminder_dialog_title">Set reminder</string>
+    <string name="reminder_note_hint">Reminder note (optional)</string>
+    <string name="reminder_save">Save</string>
     <!-- After-school event details on cards -->
     <string name="event_description_format">Description: %1$s</string>
     <string name="event_location_format">Location: %1$s</string>
