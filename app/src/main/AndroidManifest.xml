@@ -41,6 +41,11 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <!-- Receives scheduled reminder alarms and shows notifications -->
+        <receiver
+            android:name=".ReminderReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

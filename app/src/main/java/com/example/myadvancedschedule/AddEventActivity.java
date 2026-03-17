@@ -112,6 +112,9 @@ public class AddEventActivity extends AppCompatActivity {
                     .document(event.getId())
                     .set(event)
                     .addOnSuccessListener(aVoid -> {
+                        if (!reminder.isEmpty()) {
+                            ReminderUtils.scheduleEventReminder(this, event);
+                        }
                         Toast.makeText(this, "האירוע עודכן בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();
                     })
@@ -122,6 +125,10 @@ public class AddEventActivity extends AppCompatActivity {
             FirebaseHelper.getInstance().getEventsCollection()
                     .add(event)
                     .addOnSuccessListener(documentReference -> {
+                        event.setId(documentReference.getId());
+                        if (!reminder.isEmpty()) {
+                            ReminderUtils.scheduleEventReminder(this, event);
+                        }
                         Toast.makeText(this, "האירוע נוסף בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();
                     })

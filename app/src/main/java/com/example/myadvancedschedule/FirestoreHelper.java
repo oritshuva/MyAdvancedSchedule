@@ -3,6 +3,7 @@ package com.example.myadvancedschedule;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
@@ -48,6 +49,15 @@ public class FirestoreHelper {
             return;
         }
 
+        // Build a deterministic document ID to prevent exact-duplicate lessons for the same slot.
+        // Combination: userId + scheduleType + day + period + subject hash.
+        String scheduleType = lesson.getScheduleType() != null ? lesson.getScheduleType() : "school";
+        String day = lesson.getDay() != null ? lesson.getDay() : "";
+        int period = lesson.getPeriod();
+        String subjectKey = lesson.getSubject() != null ? lesson.getSubject().trim().toLowerCase() : "";
+        String rawKey = scheduleType + "|" + day + "|" + period + "|" + subjectKey;
+        String docId = userId + "_" + Integer.toHexString(rawKey.hashCode());
+
         Map<String, Object> lessonData = new HashMap<>();
         lessonData.put("userId", userId);
         lessonData.put("subject", lesson.getSubject());  // 🔥 תוקן
@@ -60,9 +70,10 @@ public class FirestoreHelper {
         lessonData.put("scheduleType", lesson.getScheduleType() != null ? lesson.getScheduleType() : "school");
 
         db.collection(COLLECTION_LESSONS)
-                .add(lessonData)
+                .document(docId)
+                .set(lessonData, SetOptions.merge())
                 .addOnSuccessListener(documentReference -> {
-                    lesson.setId(documentReference.getId());
+                    lesson.setId(docId);
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
@@ -148,6 +159,15 @@ public class FirestoreHelper {
                         filtered.add(l);
                     }
                 }
+                // Ensure deterministic ordering by time (HH:mm); fall back to period if needed.
+                java.util.Collections.sort(filtered, (a, b) -> {
+                    String aTime = a.getStartTime() != null ? a.getStartTime() : "";
+                    String bTime = b.getStartTime() != null ? b.getStartTime() : "";
+                    if (!aTime.isEmpty() && !bTime.isEmpty()) {
+                        return aTime.compareTo(bTime);
+                    }
+                    return Integer.compare(a.getPeriod(), b.getPeriod());
+                });
                 listener.onLessonsLoaded(filtered);
             }
             @Override
@@ -168,15 +188,22 @@ public class FirestoreHelper {
             listener.onFailure("User not logged in");
             return;
         }
+        // Deterministic document ID to prevent duplicate tasks with the same title and due time.
+        String titleKey = task.getTitle() != null ? task.getTitle().trim().toLowerCase() : "";
+        String dueKey = task.getDueTime() != null ? task.getDueTime().trim() : "";
+        String rawKey = titleKey + "|" + dueKey;
+        String docId = userId + "_" + Integer.toHexString(rawKey.hashCode());
+
         Map<String, Object> data = new HashMap<>();
         data.put("userId", userId);
         data.put("title", task.getTitle());
         data.put("dueTime", task.getDueTime() != null ? task.getDueTime() : "");
         data.put("completed", task.isCompleted());
         db.collection(COLLECTION_TASKS)
-                .add(data)
+                .document(docId)
+                .set(data, SetOptions.merge())
                 .addOnSuccessListener(ref -> {
-                    task.setId(ref.getId());
+                    task.setId(docId);
                     listener.onSuccess();
                 })
                 .addOnFailureListener(e -> listener.onFailure(e.getMessage()));
@@ -202,6 +229,12 @@ public class FirestoreHelper {
                         );
                         tasks.add(t);
                     }
+                    // Sort tasks by dueTime text (HH:mm) so UI order is stable.
+                    java.util.Collections.sort(tasks, (a, b) -> {
+                        String at = a.getDueTime() != null ? a.getDueTime() : "";
+                        String bt = b.getDueTime() != null ? b.getDueTime() : "";
+                        return at.compareTo(bt);
+                    });
                     listener.onTasksLoaded(tasks);
                 })
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
