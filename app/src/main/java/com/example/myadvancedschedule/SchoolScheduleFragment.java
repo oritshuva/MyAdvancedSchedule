@@ -48,6 +48,13 @@ public class SchoolScheduleFragment extends Fragment {
 
         firestoreHelper = new FirestoreHelper();
         adapter = new LessonCardAdapter();
+        adapter.setOnLessonClickListener(lesson -> {
+            if (!isAdded()) return;
+            // Open edit dialog pre-filled with this lesson.
+            AddLessonDialogFragment dialog = AddLessonDialogFragment.newInstance(lesson);
+            dialog.setOnLessonSavedListener(this::loadLessonsForCurrentDay);
+            dialog.show(getParentFragmentManager(), "EditLesson");
+        });
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
         setupDayTabs();

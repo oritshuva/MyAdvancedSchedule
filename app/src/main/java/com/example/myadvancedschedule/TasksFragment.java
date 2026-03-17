@@ -46,7 +46,13 @@ public class TasksFragment extends Fragment {
                 if (uid != null) {
                     firestoreHelper.updateTask(uid, task, new FirestoreHelper.OnOperationCompleteListener() {
                         @Override
-                        public void onSuccess() { }
+                        public void onSuccess() {
+                            if (completed) {
+                                // Immediately remove completed tasks from the list once persisted.
+                                adapter.removeTask(task);
+                                toggleEmptyState();
+                            }
+                        }
 
                         @Override
                         public void onFailure(String error) {

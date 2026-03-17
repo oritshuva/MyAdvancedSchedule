@@ -115,7 +115,24 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
             @Override
             public void onDoneChanged(Lesson lesson, boolean done) {
-                // Visual only for now – no Firestore field for "completed" on after-school lessons.
+                if (!done) {
+                    return;
+                }
+                // Marking an after-school event as done removes it from the list and Firestore.
+                firestoreHelper.deleteLesson(lesson.getId(), new FirestoreHelper.OnOperationCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        adapter.removeLesson(lesson);
+                        boolean empty = adapter.getItemCount() == 0;
+                        emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+                        recyclerLessons.setVisibility(empty ? View.GONE : View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         adapter.setShareEnabled(true, lesson -> {

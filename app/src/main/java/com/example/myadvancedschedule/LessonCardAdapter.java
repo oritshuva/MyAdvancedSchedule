@@ -32,6 +32,12 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     private boolean shareEnabled = false;
     private OnLessonShareListener shareListener;
     private OnAfterSchoolEventActionListener afterSchoolListener;
+    private OnLessonClickListener lessonClickListener;
+
+    /** Callback for tapping a regular (school) lesson card to edit it. */
+    public interface OnLessonClickListener {
+        void onLessonClick(Lesson lesson);
+    }
 
     public void setShareEnabled(boolean enabled, OnLessonShareListener listener) {
         this.shareEnabled = enabled;
@@ -42,10 +48,23 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         this.afterSchoolListener = listener;
     }
 
+    public void setOnLessonClickListener(OnLessonClickListener listener) {
+        this.lessonClickListener = listener;
+    }
+
     public void addLesson(Lesson lesson) {
         if (lesson == null) return;
         lessons.add(lesson);
         notifyItemInserted(lessons.size() - 1);
+    }
+
+    public void removeLesson(Lesson lesson) {
+        if (lesson == null) return;
+        int index = lessons.indexOf(lesson);
+        if (index >= 0) {
+            lessons.remove(index);
+            notifyItemRemoved(index);
+        }
     }
 
     public void setLessons(List<Lesson> newLessons) {
@@ -182,6 +201,13 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             holder.buttonAfterSchoolDelete.setOnClickListener(v -> afterSchoolListener.onDelete(lesson));
         } else if (holder.layoutAfterSchoolActions != null) {
             holder.layoutAfterSchoolActions.setVisibility(View.GONE);
+        }
+
+        // Tapping a regular (non-free, non–after-school) lesson opens edit dialog.
+        if (!isAfterSchool && !isFreePeriod && lessonClickListener != null) {
+            holder.itemView.setOnClickListener(v -> lessonClickListener.onLessonClick(lesson));
+        } else {
+            holder.itemView.setOnClickListener(null);
         }
     }
 
