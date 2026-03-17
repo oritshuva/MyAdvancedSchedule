@@ -18,13 +18,20 @@ public class AddTaskDialogFragment extends DialogFragment {
 
     private TextInputEditText editTaskTitle, editDueTime;
     private OnTaskAddedListener listener;
+    private Task taskToEdit;
 
     public interface OnTaskAddedListener {
-        void onTaskAdded();
+        void onTaskAdded(Task task, boolean isEdit);
     }
 
     public static AddTaskDialogFragment newInstance() {
         return new AddTaskDialogFragment();
+    }
+
+    public static AddTaskDialogFragment newInstance(Task task) {
+        AddTaskDialogFragment fragment = new AddTaskDialogFragment();
+        fragment.taskToEdit = task;
+        return fragment;
     }
 
     public void setOnTaskAddedListener(OnTaskAddedListener listener) {
@@ -38,8 +45,17 @@ public class AddTaskDialogFragment extends DialogFragment {
         View view = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_add_task, null);
         editTaskTitle = view.findViewById(R.id.editTaskTitle);
         editDueTime = view.findViewById(R.id.editDueTime);
+
+        if (taskToEdit != null) {
+            if (taskToEdit.getTitle() != null) {
+                editTaskTitle.setText(taskToEdit.getTitle());
+            }
+            if (taskToEdit.getDueTime() != null) {
+                editDueTime.setText(taskToEdit.getDueTime());
+            }
+        }
         b.setView(view)
-                .setTitle(R.string.task_add)
+                .setTitle(taskToEdit == null ? R.string.task_add : R.string.task_edit)
                 .setPositiveButton(android.R.string.ok, (dialog, which) -> saveTask())
                 .setNegativeButton(android.R.string.cancel, (dialog, which) -> dismiss());
         return b.create();
@@ -58,18 +74,40 @@ public class AddTaskDialogFragment extends DialogFragment {
             Toast.makeText(requireContext(), "Not logged in", Toast.LENGTH_SHORT).show();
             return;
         }
-        Task task = new Task(title, due.isEmpty() ? "—" : due, false);
+        boolean isEdit = taskToEdit != null;
+        Task task;
+        if (isEdit) {
+            task = taskToEdit;
+            task.setTitle(title);
+            task.setDueTime(due.isEmpty() ? "—" : due);
+        } else {
+            task = new Task(title, due.isEmpty() ? "—" : due, false);
+        }
         FirestoreHelper helper = new FirestoreHelper();
-        helper.addTask(userId, task, new FirestoreHelper.OnOperationCompleteListener() {
-            @Override
-            public void onSuccess() {
-                if (listener != null) listener.onTaskAdded();
-                dismiss();
-            }
-            @Override
-            public void onFailure(String error) {
-                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
-            }
-        });
+        if (isEdit) {
+            helper.updateTask(userId, task, new FirestoreHelper.OnOperationCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    if (listener != null) listener.onTaskAdded(task, true);
+                    dismiss();
+                }
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        } else {
+            helper.addTask(userId, task, new FirestoreHelper.OnOperationCompleteListener() {
+                @Override
+                public void onSuccess() {
+                    if (listener != null) listener.onTaskAdded(task, false);
+                    dismiss();
+                }
+                @Override
+                public void onFailure(String error) {
+                    Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 }

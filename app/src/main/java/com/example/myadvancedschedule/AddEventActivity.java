@@ -1,6 +1,7 @@
 package com.example.myadvancedschedule;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.os.Bundle;
 import android.widget.Button;
@@ -16,6 +17,7 @@ public class AddEventActivity extends AppCompatActivity {
     private String eventType, eventDay;
     private Event currentEvent;
     private boolean isEditMode = false;
+    private long reminderTriggerAtMillis = 0L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,9 +49,31 @@ public class AddEventActivity extends AppCompatActivity {
         btnDelete = findViewById(R.id.btnDelete);
         btnCancel = findViewById(R.id.btnCancel);
 
-        etStartTime.setOnClickListener(v -> showTimePicker(etStartTime));
-        etEndTime.setOnClickListener(v -> showTimePicker(etEndTime));
-        etReminder.setOnClickListener(v -> showTimePicker(etReminder));
+        etStartTime.setOnClickListener(v -> {
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            TimePickerDialog dialog = new TimePickerDialog(this,
+                    (view, hourOfDay, minute) -> {
+                        String time = String.format("%02d:%02d", hourOfDay, minute);
+                        etStartTime.setText(time);
+                    },
+                    now.get(java.util.Calendar.HOUR_OF_DAY),
+                    now.get(java.util.Calendar.MINUTE),
+                    true);
+            dialog.show();
+        });
+        etEndTime.setOnClickListener(v -> {
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            TimePickerDialog dialog = new TimePickerDialog(this,
+                    (view, hourOfDay, minute) -> {
+                        String time = String.format("%02d:%02d", hourOfDay, minute);
+                        etEndTime.setText(time);
+                    },
+                    now.get(java.util.Calendar.HOUR_OF_DAY),
+                    now.get(java.util.Calendar.MINUTE),
+                    true);
+            dialog.show();
+        });
+        etReminder.setOnClickListener(v -> showDateTimePicker());
     }
 
     private void setupButtons() {
@@ -58,13 +82,39 @@ public class AddEventActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(v -> finish());
     }
 
-    private void showTimePicker(TextInputEditText editText) {
+    private void showTimePicker(TextInputEditText editText, int year, int month, int dayOfMonth) {
+        java.util.Calendar now = java.util.Calendar.getInstance();
         TimePickerDialog timePickerDialog = new TimePickerDialog(this,
                 (view, hourOfDay, minute) -> {
-                    String time = String.format("%02d:%02d", hourOfDay, minute);
-                    editText.setText(time);
-                }, 8, 0, true);
+                    java.util.Calendar selected = java.util.Calendar.getInstance();
+                    selected.set(java.util.Calendar.YEAR, year);
+                    selected.set(java.util.Calendar.MONTH, month);
+                    selected.set(java.util.Calendar.DAY_OF_MONTH, dayOfMonth);
+                    selected.set(java.util.Calendar.HOUR_OF_DAY, hourOfDay);
+                    selected.set(java.util.Calendar.MINUTE, minute);
+                    selected.set(java.util.Calendar.SECOND, 0);
+                    selected.set(java.util.Calendar.MILLISECOND, 0);
+                    long triggerAt = selected.getTimeInMillis();
+                    if (triggerAt <= System.currentTimeMillis()) {
+                        Toast.makeText(this, R.string.reminder_time_in_past, Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    reminderTriggerAtMillis = triggerAt;
+                    String text = String.format("%02d/%02d/%04d %02d:%02d",
+                            dayOfMonth, month + 1, year, hourOfDay, minute);
+                    editText.setText(text);
+                }, now.get(java.util.Calendar.HOUR_OF_DAY), now.get(java.util.Calendar.MINUTE), true);
         timePickerDialog.show();
+    }
+
+    private void showDateTimePicker() {
+        java.util.Calendar now = java.util.Calendar.getInstance();
+        DatePickerDialog datePickerDialog = new DatePickerDialog(this,
+                (view, year, month, dayOfMonth) -> showTimePicker(etReminder, year, month, dayOfMonth),
+                now.get(java.util.Calendar.YEAR),
+                now.get(java.util.Calendar.MONTH),
+                now.get(java.util.Calendar.DAY_OF_MONTH));
+        datePickerDialog.show();
     }
 
     private void loadEventData() {
@@ -112,8 +162,8 @@ public class AddEventActivity extends AppCompatActivity {
                     .document(event.getId())
                     .set(event)
                     .addOnSuccessListener(aVoid -> {
-                        if (!reminder.isEmpty()) {
-                            ReminderUtils.scheduleEventReminder(this, event);
+                        if (reminderTriggerAtMillis > 0) {
+                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis);
                         }
                         Toast.makeText(this, "האירוע עודכן בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();
@@ -126,8 +176,8 @@ public class AddEventActivity extends AppCompatActivity {
                     .add(event)
                     .addOnSuccessListener(documentReference -> {
                         event.setId(documentReference.getId());
-                        if (!reminder.isEmpty()) {
-                            ReminderUtils.scheduleEventReminder(this, event);
+                        if (reminderTriggerAtMillis > 0) {
+                            ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis);
                         }
                         Toast.makeText(this, "האירוע נוסף בהצלחה", Toast.LENGTH_SHORT).show();
                         finish();

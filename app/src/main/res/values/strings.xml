@@ -169,9 +169,12 @@
 
     <!-- Tasks actions -->
     <string name="task_delete">Delete task</string>
+    <string name="task_edit">Edit task</string>
     <string name="task_share">Share task</string>
     <string name="task_reminder">Reminder</string>
     <string name="task_shared_text">%1$s (due: %2$s)</string>
+    <string name="reminder_scheduled">Reminder scheduled</string>
+    <string name="reminder_time_in_past">Please choose a time in the future</string>
     <!-- After-school event details on cards -->
     <string name="event_description_format">Description: %1$s</string>
     <string name="event_location_format">Location: %1$s</string>
