@@ -46,8 +46,7 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
-            String name = currentUserDisplayName();
-            getSupportActionBar().setTitle(name != null && !name.isEmpty() ? getString(R.string.app_name) + " – " + name : getString(R.string.app_name));
+            updateToolbarTitle(0);
         }
     }
 
@@ -79,6 +78,34 @@ public class MainActivity extends AppCompatActivity {
                     break;
             }
         }).attach();
+
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                updateToolbarTitle(position);
+            }
+        });
+    }
+
+    private void updateToolbarTitle(int position) {
+        if (getSupportActionBar() == null) return;
+        int titleRes;
+        switch (position) {
+            case 0:
+                titleRes = R.string.tasks_title;
+                break;
+            case 1:
+                titleRes = R.string.school_schedule_title;
+                break;
+            case 2:
+                titleRes = R.string.after_school_title;
+                break;
+            default:
+                titleRes = R.string.app_name;
+                break;
+        }
+        getSupportActionBar().setTitle(getString(titleRes));
     }
 
     @Override

@@ -150,8 +150,8 @@
     <string name="logout">Logout</string>
 
     <!-- Schedule headers -->
-    <string name="today_schedule_title">%1$s - Today Schedule</string>
-    <string name="today_after_school_title">%1$s - After School Schedule</string>
+    <string name="today_schedule_title">%1$s - School schedule</string>
+    <string name="today_after_school_title">%1$s - After-school schedule</string>
 
     <!-- Lesson card formatting -->
     <string name="lesson_number_format">Lesson %1$d</string>
@@ -172,5 +172,8 @@
     <string name="task_share">Share task</string>
     <string name="task_reminder">Reminder</string>
     <string name="task_shared_text">%1$s (due: %2$s)</string>
+    <!-- After-school event details on cards -->
+    <string name="event_description_format">Description: %1$s</string>
+    <string name="event_location_format">Location: %1$s</string>
 
 </resources>

@@ -136,7 +136,7 @@ public class FirestoreHelper {
                 .addOnFailureListener(e -> listener.onError(e.getMessage()));
     }
 
-    /** Load lessons for today filtered by scheduleType ("school" or "after_school"). */
+    /** Load lessons for a specific day filtered by scheduleType ("school" or "after_school"). */
     public void getLessonsForToday(String scheduleType, String todayDayName, OnLessonsLoadedListener listener) {
         getAllLessons(new OnLessonsLoadedListener() {
             @Override
