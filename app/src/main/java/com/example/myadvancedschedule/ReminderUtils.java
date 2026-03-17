@@ -63,7 +63,11 @@ public final class ReminderUtils {
     }
 
     /**
-     * Schedule a one-shot reminder at the exact provided time.
+     * Schedule a one-shot reminder at the provided time.
+     *
+     * On Android 12+ this checks SCHEDULE_EXACT_ALARM permission / app-op before
+     * attempting an exact alarm. If not allowed, it falls back to a non-exact alarm
+     * (still schedules, but timing may be inexact) and never throws SecurityException.
      */
     public static void scheduleExactReminder(Context context, String title, String message, long triggerAtMillis, int requestCode) {
         if (context == null) return;
@@ -83,11 +87,50 @@ public final class ReminderUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMillis,
-                pendingIntent
-        );
+        try {
+            boolean canUseExact = true;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                canUseExact = alarmManager.canScheduleExactAlarms();
+            }
+
+            if (canUseExact) {
+                alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                );
+            } else {
+                // Fallback: schedule a non-exact alarm instead of crashing.
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent
+                    );
+                } else {
+                    alarmManager.set(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent
+                    );
+                }
+            }
+        } catch (SecurityException e) {
+            // As a final safety net, fall back to a non-exact alarm and avoid crashing.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                );
+            } else {
+                alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                );
+            }
+        }
     }
 
     /**
