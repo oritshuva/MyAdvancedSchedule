@@ -52,7 +52,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="@string/subject">
+            android:hint="@string/event_description_format">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputEventDescription"
@@ -64,7 +64,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:hint="@string/classroom">
+            android:hint="@string/event_location_format">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/inputEventLocation"

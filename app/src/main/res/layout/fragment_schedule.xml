@@ -59,6 +59,17 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Horizontal day-of-week selector (Sunday–Saturday) -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="4dp"
+            app:tabMode="scrollable"
+            app:tabIndicatorFullWidth="false" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerLessons"
             android:layout_width="match_parent"

@@ -1,11 +1,9 @@
 package com.example.myadvancedschedule;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,7 +14,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/** Adapter for lesson cards (Subject, Teacher, Classroom, Start – End time). */
+/** Adapter for lesson cards with a timetable-like layout. */
 public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.LessonCardViewHolder> {
 
     public interface OnLessonShareListener {
@@ -43,7 +41,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             int expectedPeriod = sorted.get(0).getPeriod();
 
             for (Lesson lesson : sorted) {
-                // Insert "Free period" slots for missing periods
+                // Insert "Free period" slots for missing periods (school schedule only)
                 while (expectedPeriod > 0 && expectedPeriod < lesson.getPeriod()) {
                     Lesson free = new Lesson();
                     free.setPeriod(expectedPeriod);
@@ -80,19 +78,44 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         boolean isFreePeriod = lesson.getSubject() == null
                 || lesson.getSubject().trim().isEmpty()
                 || "Free period / חלון".equals(lesson.getSubject());
+        boolean isAfterSchool = "after_school".equals(lesson.getScheduleType());
 
         int period = lesson.getPeriod();
-        if (period > 0) {
+        if (period > 0 && !isAfterSchool) {
             holder.textLessonNumber.setText(
                     context.getString(R.string.lesson_number_format, period));
         } else {
             holder.textLessonNumber.setText("");
         }
 
-        if (isFreePeriod) {
+        if (isFreePeriod && !isAfterSchool) {
             holder.textSubject.setText(context.getString(R.string.free_period_label));
             holder.textTeacher.setText("");
             holder.textClassroom.setText("");
+            holder.textTeacher.setVisibility(View.GONE);
+            holder.textClassroom.setVisibility(View.GONE);
+        } else if (isAfterSchool) {
+            String title = lesson.getSubject() != null ? lesson.getSubject() : "";
+            String description = lesson.getTeacher() != null ? lesson.getTeacher() : "";
+            String location = lesson.getClassroom() != null ? lesson.getClassroom() : "";
+
+            holder.textSubject.setText(title);
+
+            if (!description.isEmpty()) {
+                holder.textTeacher.setVisibility(View.VISIBLE);
+                holder.textTeacher.setText(
+                        context.getString(R.string.event_description_format, description));
+            } else {
+                holder.textTeacher.setVisibility(View.GONE);
+            }
+
+            if (!location.isEmpty()) {
+                holder.textClassroom.setVisibility(View.VISIBLE);
+                holder.textClassroom.setText(
+                        context.getString(R.string.event_location_format, location));
+            } else {
+                holder.textClassroom.setVisibility(View.GONE);
+            }
         } else {
             String subject = lesson.getSubject() != null ? lesson.getSubject() : "";
             String teacher = lesson.getTeacher() != null ? lesson.getTeacher() : "";
@@ -100,8 +123,10 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
 
             holder.textSubject.setText(
                     context.getString(R.string.lesson_subject_format, subject));
+            holder.textTeacher.setVisibility(View.VISIBLE);
             holder.textTeacher.setText(
                     context.getString(R.string.lesson_teacher_format, teacher));
+            holder.textClassroom.setVisibility(View.VISIBLE);
             holder.textClassroom.setText(
                     context.getString(R.string.lesson_classroom_format, classroom));
         }
@@ -110,9 +135,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         String end = lesson.getEndTime() != null ? lesson.getEndTime() : "";
         holder.textTime.setText(start.isEmpty() && end.isEmpty() ? "" : start + " – " + end);
 
-        // Simple subject-based color indicator for visual timetable style
-        int color = pickColorForSubject(lesson.getSubject());
-        holder.viewSubjectIndicator.setBackgroundColor(color);
+        // Keep subject indicator in a single consistent color defined in XML (no subject-based colors).
 
         if (shareEnabled && shareListener != null && !isFreePeriod) {
             holder.itemView.setOnLongClickListener(v -> {
@@ -121,18 +144,6 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             });
         } else {
             holder.itemView.setOnLongClickListener(null);
-        }
-    }
-
-    private int pickColorForSubject(String subject) {
-        if (subject == null) return Color.parseColor("#FFB74D"); // default amber
-        int hash = Math.abs(subject.hashCode());
-        switch (hash % 5) {
-            case 0: return Color.parseColor("#42A5F5"); // blue
-            case 1: return Color.parseColor("#66BB6A"); // green
-            case 2: return Color.parseColor("#AB47BC"); // purple
-            case 3: return Color.parseColor("#EF5350"); // red
-            default: return Color.parseColor("#FFB74D"); // amber
         }
     }
 

@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.tabs.TabLayout;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,8 +32,10 @@ public class AfterSchoolScheduleFragment extends Fragment {
     private TextView textDateSubtitle;
     private TextView textInfoMessage;
     private FloatingActionButton fabAddEvent;
+    private TabLayout tabDays;
     private LessonCardAdapter adapter;
     private FirestoreHelper firestoreHelper;
+    private String currentDayName;
 
     @Nullable
     @Override
@@ -46,6 +49,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
         textDateSubtitle = view.findViewById(R.id.textDateSubtitle);
         textInfoMessage = view.findViewById(R.id.textInfoMessage);
         fabAddEvent = view.findViewById(R.id.fabAddEvent);
+        tabDays = view.findViewById(R.id.tabDays);
 
         firestoreHelper = new FirestoreHelper();
         adapter = new LessonCardAdapter();
@@ -74,21 +78,66 @@ public class AfterSchoolScheduleFragment extends Fragment {
         });
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
-        configureHeaderAndFab();
-        loadLessons();
+        setupDayTabsAndHeader();
         return view;
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        loadLessons();
+        loadLessonsForCurrentDay();
     }
 
-    private void configureHeaderAndFab() {
-        String today = ScheduleFragmentHelper.getTodayDayName();
+    private void setupDayTabsAndHeader() {
+        if (tabDays != null) {
+            tabDays.removeAllTabs();
+            String[] days = getResources().getStringArray(R.array.days_array_english);
+            String today = ScheduleFragmentHelper.getTodayDayName();
+            int selectedIndex = 0;
+            for (int i = 0; i < days.length; i++) {
+                String dayName = days[i];
+                TabLayout.Tab tab = tabDays.newTab().setText(dayName.substring(0, 3));
+                tab.setTag(dayName);
+                tabDays.addTab(tab, false);
+                if (dayName.equals(today)) {
+                    selectedIndex = i;
+                }
+            }
+            currentDayName = days[selectedIndex];
+            TabLayout.Tab selected = tabDays.getTabAt(selectedIndex);
+            if (selected != null) selected.select();
+
+            tabDays.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+                @Override
+                public void onTabSelected(TabLayout.Tab tab) {
+                    Object tag = tab.getTag();
+                    if (tag instanceof String) {
+                        currentDayName = (String) tag;
+                        configureHeaderForDay(currentDayName);
+                        loadLessonsForCurrentDay();
+                    }
+                }
+
+                @Override
+                public void onTabUnselected(TabLayout.Tab tab) {}
+
+                @Override
+                public void onTabReselected(TabLayout.Tab tab) {
+                    onTabSelected(tab);
+                }
+            });
+        } else {
+            currentDayName = ScheduleFragmentHelper.getTodayDayName();
+        }
+        configureHeaderForDay(currentDayName);
+        loadLessonsForCurrentDay();
+        configureFab();
+    }
+
+    private void configureHeaderForDay(String dayName) {
+        String day = dayName != null ? dayName : ScheduleFragmentHelper.getTodayDayName();
         if (textDayTitle != null) {
-            String title = getString(R.string.today_after_school_title, today);
+            String title = getString(R.string.today_after_school_title, day);
             textDayTitle.setText(title);
         }
         if (textDateSubtitle != null) {
@@ -100,23 +149,26 @@ public class AfterSchoolScheduleFragment extends Fragment {
             textInfoMessage.setVisibility(View.VISIBLE);
             textInfoMessage.setText(R.string.after_school_info_message);
         }
+    }
+
+    private void configureFab() {
         if (fabAddEvent != null) {
             fabAddEvent.setVisibility(View.VISIBLE);
             fabAddEvent.setOnClickListener(v -> {
                 AddAfterSchoolEventDialogFragment dialog =
                         AddAfterSchoolEventDialogFragment.newInstance();
-                dialog.setOnEventSavedListener(this::loadLessons);
+                dialog.setOnEventSavedListener(this::loadLessonsForCurrentDay);
                 dialog.show(getParentFragmentManager(), "AddAfterSchoolEvent");
             });
         }
     }
 
-    private void loadLessons() {
+    private void loadLessonsForCurrentDay() {
+        String day = currentDayName != null ? currentDayName : ScheduleFragmentHelper.getTodayDayName();
         progressBar.setVisibility(View.VISIBLE);
         recyclerLessons.setVisibility(View.GONE);
         emptyView.setVisibility(View.GONE);
-        String today = ScheduleFragmentHelper.getTodayDayName();
-        firestoreHelper.getLessonsForToday("after_school", today, new FirestoreHelper.OnLessonsLoadedListener() {
+        firestoreHelper.getLessonsForToday("after_school", day, new FirestoreHelper.OnLessonsLoadedListener() {
             @Override
             public void onLessonsLoaded(List<Lesson> lessons) {
                 progressBar.setVisibility(View.GONE);
