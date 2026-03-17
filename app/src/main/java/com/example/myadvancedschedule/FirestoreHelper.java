@@ -206,6 +206,12 @@ public class FirestoreHelper {
         data.put("title", task.getTitle());
         data.put("dueTime", task.getDueTime() != null ? task.getDueTime() : "");
         data.put("completed", task.isCompleted());
+        if (task.getReminderTimeMillis() != null) {
+            data.put("reminderTimeMillis", task.getReminderTimeMillis());
+        }
+        if (task.getReminderDetail() != null && !task.getReminderDetail().trim().isEmpty()) {
+            data.put("reminderDetail", task.getReminderDetail());
+        }
         db.collection(COLLECTION_TASKS)
                 .document(docId)
                 .set(data, SetOptions.merge())
@@ -238,6 +244,14 @@ public class FirestoreHelper {
                                 doc.getString("dueTime"),
                                 completed
                         );
+                        Long rt = doc.getLong("reminderTimeMillis");
+                        String detail = doc.getString("reminderDetail");
+                        if (rt != null && rt > 0) {
+                            t.setReminderTimeMillis(rt);
+                        }
+                        if (detail != null && !detail.trim().isEmpty()) {
+                            t.setReminderDetail(detail.trim());
+                        }
                         tasks.add(t);
                     }
                     // Sort tasks by dueTime text (HH:mm) so UI order is stable.
@@ -261,6 +275,16 @@ public class FirestoreHelper {
         data.put("title", task.getTitle());
         data.put("dueTime", task.getDueTime() != null ? task.getDueTime() : "");
         data.put("completed", task.isCompleted());
+        if (task.getReminderTimeMillis() != null) {
+            data.put("reminderTimeMillis", task.getReminderTimeMillis());
+        } else {
+            data.remove("reminderTimeMillis");
+        }
+        if (task.getReminderDetail() != null && !task.getReminderDetail().trim().isEmpty()) {
+            data.put("reminderDetail", task.getReminderDetail());
+        } else {
+            data.remove("reminderDetail");
+        }
         db.collection(COLLECTION_TASKS)
                 .document(task.getId())
                 .set(data)

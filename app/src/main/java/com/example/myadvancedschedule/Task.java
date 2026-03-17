@@ -8,6 +8,9 @@ public class Task implements Serializable {
     private String title;
     private String dueTime;  // e.g. "14:30" or "Tomorrow 10:00"
     private boolean completed;
+    // Optional reminder metadata (millis since epoch and user-entered detail text).
+    private Long reminderTimeMillis;
+    private String reminderDetail;
 
     public Task() {
     }
@@ -33,4 +36,20 @@ public class Task implements Serializable {
     public void setDueTime(String dueTime) { this.dueTime = dueTime; }
     public boolean isCompleted() { return completed; }
     public void setCompleted(boolean completed) { this.completed = completed; }
+
+    public Long getReminderTimeMillis() {
+        return reminderTimeMillis;
+    }
+
+    public void setReminderTimeMillis(Long reminderTimeMillis) {
+        this.reminderTimeMillis = reminderTimeMillis;
+    }
+
+    public String getReminderDetail() {
+        return reminderDetail;
+    }
+
+    public void setReminderDetail(String reminderDetail) {
+        this.reminderDetail = reminderDetail;
+    }
 }
