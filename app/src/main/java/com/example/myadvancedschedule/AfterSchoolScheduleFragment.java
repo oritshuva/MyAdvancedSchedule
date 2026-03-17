@@ -53,6 +53,67 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
         firestoreHelper = new FirestoreHelper();
         adapter = new LessonCardAdapter();
+        adapter.setAfterSchoolEventActionListener(new LessonCardAdapter.OnAfterSchoolEventActionListener() {
+            @Override
+            public void onDelete(Lesson lesson) {
+                firestoreHelper.deleteLesson(lesson.getId(), new FirestoreHelper.OnOperationCompleteListener() {
+                    @Override
+                    public void onSuccess() {
+                        // Reload day smoothly without full-screen white flash.
+                        loadLessonsForCurrentDay();
+                    }
+
+                    @Override
+                    public void onFailure(String error) {
+                        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onShare(Lesson lesson) {
+                String title = lesson.getSubject() != null ? lesson.getSubject() : getString(R.string.after_school_title);
+                String time = "";
+                if (lesson.getStartTime() != null || lesson.getEndTime() != null) {
+                    String start = lesson.getStartTime() != null ? lesson.getStartTime() : "";
+                    String end = lesson.getEndTime() != null ? lesson.getEndTime() : "";
+                    time = start.isEmpty() && end.isEmpty() ? "" : start + " – " + end;
+                }
+                String location = lesson.getClassroom() != null ? lesson.getClassroom() : "";
+                StringBuilder shareText = new StringBuilder();
+                shareText.append(title);
+                if (!time.isEmpty()) {
+                    shareText.append(" (").append(time).append(")");
+                }
+                if (!location.isEmpty()) {
+                    shareText.append(" @ ").append(location);
+                }
+
+                android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(android.content.Intent.EXTRA_TEXT, shareText.toString());
+                startActivity(android.content.Intent.createChooser(intent, null));
+            }
+
+            @Override
+            public void onReminder(Lesson lesson) {
+                if (getContext() == null) return;
+                ReminderUtils.showDateTimePicker(requireContext(), triggerAt -> {
+                    Event event = new Event();
+                    event.setId(lesson.getId());
+                    event.setTitle(lesson.getSubject());
+                    event.setDay(lesson.getDay());
+                    event.setType("after_school");
+                    ReminderUtils.scheduleEventReminder(requireContext(), event, triggerAt);
+                    Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onDoneChanged(Lesson lesson, boolean done) {
+                // Visual only for now – no Firestore field for "completed" on after-school lessons.
+            }
+        });
         adapter.setShareEnabled(true, lesson -> {
             String title = lesson.getSubject() != null ? lesson.getSubject() : getString(R.string.after_school_title);
             String time = "";

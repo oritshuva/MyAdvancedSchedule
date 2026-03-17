@@ -21,13 +21,31 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         void onLessonShare(Lesson lesson);
     }
 
+    public interface OnAfterSchoolEventActionListener {
+        void onDelete(Lesson lesson);
+        void onShare(Lesson lesson);
+        void onReminder(Lesson lesson);
+        void onDoneChanged(Lesson lesson, boolean done);
+    }
+
     private final List<Lesson> lessons = new ArrayList<>();
     private boolean shareEnabled = false;
     private OnLessonShareListener shareListener;
+    private OnAfterSchoolEventActionListener afterSchoolListener;
 
     public void setShareEnabled(boolean enabled, OnLessonShareListener listener) {
         this.shareEnabled = enabled;
         this.shareListener = listener;
+    }
+
+    public void setAfterSchoolEventActionListener(OnAfterSchoolEventActionListener listener) {
+        this.afterSchoolListener = listener;
+    }
+
+    public void addLesson(Lesson lesson) {
+        if (lesson == null) return;
+        lessons.add(lesson);
+        notifyItemInserted(lessons.size() - 1);
     }
 
     public void setLessons(List<Lesson> newLessons) {
@@ -145,6 +163,26 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         } else {
             holder.itemView.setOnLongClickListener(null);
         }
+
+        // After-school events: show action row and wire up callbacks.
+        if (isAfterSchool && afterSchoolListener != null) {
+            holder.layoutAfterSchoolActions.setVisibility(View.VISIBLE);
+
+            holder.checkAfterSchoolDone.setOnCheckedChangeListener(null);
+            holder.checkAfterSchoolDone.setChecked(false);
+            holder.itemView.setAlpha(holder.checkAfterSchoolDone.isChecked() ? 0.6f : 1f);
+
+            holder.checkAfterSchoolDone.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                holder.itemView.setAlpha(isChecked ? 0.6f : 1f);
+                afterSchoolListener.onDoneChanged(lesson, isChecked);
+            });
+
+            holder.buttonAfterSchoolShare.setOnClickListener(v -> afterSchoolListener.onShare(lesson));
+            holder.buttonAfterSchoolReminder.setOnClickListener(v -> afterSchoolListener.onReminder(lesson));
+            holder.buttonAfterSchoolDelete.setOnClickListener(v -> afterSchoolListener.onDelete(lesson));
+        } else if (holder.layoutAfterSchoolActions != null) {
+            holder.layoutAfterSchoolActions.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -155,6 +193,9 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     static class LessonCardViewHolder extends RecyclerView.ViewHolder {
         View viewSubjectIndicator;
         TextView textLessonNumber, textSubject, textTeacher, textClassroom, textTime;
+        View layoutAfterSchoolActions;
+        android.widget.CheckBox checkAfterSchoolDone;
+        android.widget.ImageButton buttonAfterSchoolShare, buttonAfterSchoolReminder, buttonAfterSchoolDelete;
 
         LessonCardViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -164,6 +205,11 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             textTeacher = itemView.findViewById(R.id.textTeacher);
             textClassroom = itemView.findViewById(R.id.textClassroom);
             textTime = itemView.findViewById(R.id.textTime);
+            layoutAfterSchoolActions = itemView.findViewById(R.id.layoutAfterSchoolActions);
+            checkAfterSchoolDone = itemView.findViewById(R.id.checkAfterSchoolDone);
+            buttonAfterSchoolShare = itemView.findViewById(R.id.buttonAfterSchoolShare);
+            buttonAfterSchoolReminder = itemView.findViewById(R.id.buttonAfterSchoolReminder);
+            buttonAfterSchoolDelete = itemView.findViewById(R.id.buttonAfterSchoolDelete);
         }
     }
 }

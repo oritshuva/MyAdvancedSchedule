@@ -61,7 +61,8 @@ public class TasksFragment extends Fragment {
                 firestoreHelper.deleteTask(task.getId(), new FirestoreHelper.OnOperationCompleteListener() {
                     @Override
                     public void onSuccess() {
-                        loadTasks();
+                        adapter.removeTask(task);
+                        toggleEmptyState();
                     }
 
                     @Override
@@ -70,12 +71,40 @@ public class TasksFragment extends Fragment {
                     }
                 });
             }
+
+            @Override
+            public void onTaskEdit(Task task) {
+                AddTaskDialogFragment dialog = AddTaskDialogFragment.newInstance(task);
+                dialog.setOnTaskAddedListener((updatedTask, isEdit) -> {
+                    if (isEdit) {
+                        adapter.updateTask(updatedTask);
+                    }
+                    toggleEmptyState();
+                });
+                dialog.show(getParentFragmentManager(), "EditTask");
+            }
+
+            @Override
+            public void onTaskReminderRequested(Task task) {
+                if (getContext() == null) return;
+                ReminderUtils.showDateTimePicker(requireContext(), triggerAt -> {
+                    ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt);
+                    Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                });
+            }
         });
         recyclerTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerTasks.setAdapter(adapter);
         fabAddTask.setOnClickListener(v -> {
             AddTaskDialogFragment d = AddTaskDialogFragment.newInstance();
-            d.setOnTaskAddedListener(this::loadTasks);
+            d.setOnTaskAddedListener((task, isEdit) -> {
+                if (!isEdit) {
+                    adapter.addTask(task);
+                } else {
+                    adapter.updateTask(task);
+                }
+                toggleEmptyState();
+            });
             d.show(getParentFragmentManager(), "AddTask");
         });
         loadTasks();
@@ -93,9 +122,7 @@ public class TasksFragment extends Fragment {
             @Override
             public void onTasksLoaded(List<Task> tasks) {
                 adapter.setTasks(tasks);
-                boolean empty = tasks == null || tasks.isEmpty();
-                emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
-                recyclerTasks.setVisibility(empty ? View.GONE : View.VISIBLE);
+                toggleEmptyState();
             }
             @Override
             public void onError(String error) {
@@ -104,5 +131,11 @@ public class TasksFragment extends Fragment {
                 recyclerTasks.setVisibility(View.GONE);
             }
         });
+    }
+
+    private void toggleEmptyState() {
+        boolean empty = adapter.getItemCount() == 0;
+        emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
+        recyclerTasks.setVisibility(empty ? View.GONE : View.VISIBLE);
     }
 }

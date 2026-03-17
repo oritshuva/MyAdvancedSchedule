@@ -22,6 +22,8 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public interface OnTaskActionListener {
         void onTaskCheckedChanged(Task task, boolean completed);
         void onTaskDeleted(Task task);
+        void onTaskEdit(Task task);
+        void onTaskReminderRequested(Task task);
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
@@ -32,6 +34,30 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         tasks.clear();
         if (newTasks != null) tasks.addAll(newTasks);
         notifyDataSetChanged();
+    }
+
+    public void addTask(Task task) {
+        if (task == null) return;
+        tasks.add(task);
+        notifyItemInserted(tasks.size() - 1);
+    }
+
+    public void removeTask(Task task) {
+        if (task == null) return;
+        int index = tasks.indexOf(task);
+        if (index >= 0) {
+            tasks.remove(index);
+            notifyItemRemoved(index);
+        }
+    }
+
+    public void updateTask(Task task) {
+        if (task == null) return;
+        int index = tasks.indexOf(task);
+        if (index >= 0) {
+            tasks.set(index, task);
+            notifyItemChanged(index);
+        }
     }
 
     @NonNull
@@ -73,7 +99,15 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         });
 
         holder.buttonReminder.setOnClickListener(v -> {
-            ReminderUtils.showImmediateTaskReminder(v.getContext(), task);
+            if (listener != null) {
+                listener.onTaskReminderRequested(task);
+            }
+        });
+
+        holder.buttonEdit.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onTaskEdit(task);
+            }
         });
     }
 
@@ -85,7 +119,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         CheckBox checkCompleted;
         TextView textTaskTitle, textDueTime;
-        ImageButton buttonShare, buttonReminder, buttonDelete;
+        ImageButton buttonShare, buttonReminder, buttonDelete, buttonEdit;
 
         TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -95,6 +129,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             buttonShare = itemView.findViewById(R.id.buttonShare);
             buttonReminder = itemView.findViewById(R.id.buttonReminder);
             buttonDelete = itemView.findViewById(R.id.buttonDelete);
+            buttonEdit = itemView.findViewById(R.id.buttonEdit);
         }
     }
 }

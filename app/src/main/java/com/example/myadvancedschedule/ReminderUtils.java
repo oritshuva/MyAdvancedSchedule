@@ -1,22 +1,34 @@
 package com.example.myadvancedschedule;
 
 import android.app.AlarmManager;
+import android.app.DatePickerDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.TimePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.widget.DatePicker;
+import android.widget.TimePicker;
+import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
+import java.util.Calendar;
+import java.util.Locale;
+
 /**
- * Small helper to show simple notification reminders for tasks and events.
+ * Helper for showing and scheduling reminder notifications for tasks and events.
  */
 public final class ReminderUtils {
 
     private static final String CHANNEL_ID = "myadvancedschedule_reminders";
+
+    public interface OnDateTimeSelectedListener {
+        void onDateTimeSelected(long triggerAtMillis);
+    }
 
     private ReminderUtils() {
     }
@@ -36,14 +48,7 @@ public final class ReminderUtils {
         }
     }
 
-    public static void showImmediateTaskReminder(Context context, Task task) {
-        ensureChannel(context);
-        String title = context.getString(R.string.app_name);
-        String message = task.getTitle() != null ? task.getTitle() : context.getString(R.string.task_reminder);
-        showReminderNotification(context, title, message);
-    }
-
-    /** Generic API to show a reminder notification. */
+    /** Generic API to show a reminder notification immediately. */
     public static void showReminderNotification(Context context, String title, String message) {
         ensureChannel(context);
         String finalTitle = title != null && !title.trim().isEmpty()
@@ -62,62 +67,63 @@ public final class ReminderUtils {
     }
 
     /**
-     * Schedule a reminder for an event based on its day-of-week and reminderTime (HH:mm).
-     * Returns true if a future reminder was scheduled.
+     * Show a date picker followed by a time picker and invoke the listener with the
+     * exact trigger time in milliseconds.
      */
-    public static boolean scheduleEventReminder(Context context, Event event) {
-        if (event == null) return false;
-        String reminderTime = event.getReminderTime();
-        String dayName = event.getDay();
-        if (reminderTime == null || reminderTime.trim().isEmpty() || dayName == null) {
-            return false;
-        }
-        String[] parts = reminderTime.split(":");
-        if (parts.length != 2) return false;
-        int hour;
-        int minute;
-        try {
-            hour = Integer.parseInt(parts[0]);
-            minute = Integer.parseInt(parts[1]);
-        } catch (NumberFormatException e) {
-            return false;
-        }
+    public static void showDateTimePicker(Context context, OnDateTimeSelectedListener listener) {
+        if (listener == null) return;
 
-        java.util.Calendar trigger = java.util.Calendar.getInstance();
-        trigger.set(java.util.Calendar.SECOND, 0);
-        trigger.set(java.util.Calendar.MILLISECOND, 0);
+        Calendar now = Calendar.getInstance();
+        DatePickerDialog dateDialog = new DatePickerDialog(
+                context,
+                (DatePicker view, int year, int month, int dayOfMonth) -> {
+                    Calendar selected = Calendar.getInstance();
+                    selected.set(Calendar.YEAR, year);
+                    selected.set(Calendar.MONTH, month);
+                    selected.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-        int targetDow = mapDayNameToCalendar(dayName);
-        if (targetDow == -1) {
-            targetDow = trigger.get(java.util.Calendar.DAY_OF_WEEK);
-        }
+                    TimePickerDialog timeDialog = new TimePickerDialog(
+                            context,
+                            (TimePicker timeView, int hourOfDay, int minute) -> {
+                                selected.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                                selected.set(Calendar.MINUTE, minute);
+                                selected.set(Calendar.SECOND, 0);
+                                selected.set(Calendar.MILLISECOND, 0);
 
-        // Find the next occurrence of the requested day/time.
-        while (true) {
-            int currentDow = trigger.get(java.util.Calendar.DAY_OF_WEEK);
-            if (currentDow == targetDow) {
-                trigger.set(java.util.Calendar.HOUR_OF_DAY, hour);
-                trigger.set(java.util.Calendar.MINUTE, minute);
-                if (trigger.getTimeInMillis() > System.currentTimeMillis()) {
-                    break;
-                }
-            }
-            trigger.add(java.util.Calendar.DAY_OF_YEAR, 1);
-        }
+                                long triggerAt = selected.getTimeInMillis();
+                                if (triggerAt <= System.currentTimeMillis()) {
+                                    Toast.makeText(context, R.string.reminder_time_in_past, Toast.LENGTH_SHORT).show();
+                                    return;
+                                }
+                                listener.onDateTimeSelected(triggerAt);
+                            },
+                            now.get(Calendar.HOUR_OF_DAY),
+                            now.get(Calendar.MINUTE),
+                            true
+                    );
+                    timeDialog.show();
+                },
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
+        );
+        dateDialog.show();
+    }
 
-        long triggerAt = trigger.getTimeInMillis();
-        if (triggerAt <= System.currentTimeMillis()) {
-            return false;
-        }
+    /**
+     * Schedule a one-shot reminder at the exact provided time.
+     */
+    public static void scheduleExactReminder(Context context, String title, String message, long triggerAtMillis, int requestCode) {
+        if (context == null) return;
+        if (triggerAtMillis <= System.currentTimeMillis()) return;
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) return false;
+        if (alarmManager == null) return;
 
         Intent intent = new Intent(context, ReminderReceiver.class);
-        intent.putExtra(ReminderReceiver.EXTRA_TITLE, event.getTitle());
-        intent.putExtra(ReminderReceiver.EXTRA_MESSAGE, event.getTitle());
+        intent.putExtra(ReminderReceiver.EXTRA_TITLE, title);
+        intent.putExtra(ReminderReceiver.EXTRA_MESSAGE, message);
 
-        int requestCode = buildEventRequestCode(event);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context,
                 requestCode,
@@ -127,28 +133,38 @@ public final class ReminderUtils {
 
         alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
-                triggerAt,
+                triggerAtMillis,
                 pendingIntent
         );
-        return true;
     }
 
-    private static int mapDayNameToCalendar(String dayName) {
-        if (dayName == null) return -1;
-        String d = dayName.trim().toLowerCase(java.util.Locale.US);
-        if (d.startsWith("sun")) return java.util.Calendar.SUNDAY;
-        if (d.startsWith("mon")) return java.util.Calendar.MONDAY;
-        if (d.startsWith("tue")) return java.util.Calendar.TUESDAY;
-        if (d.startsWith("wed")) return java.util.Calendar.WEDNESDAY;
-        if (d.startsWith("thu")) return java.util.Calendar.THURSDAY;
-        if (d.startsWith("fri")) return java.util.Calendar.FRIDAY;
-        if (d.startsWith("sat")) return java.util.Calendar.SATURDAY;
-        return -1;
+    /**
+     * Convenience helper for tasks to schedule an exact reminder.
+     */
+    public static void scheduleTaskReminder(Context context, Task task, long triggerAtMillis) {
+        if (task == null) return;
+        String title = context.getString(R.string.app_name);
+        String message = task.getTitle() != null ? task.getTitle() : context.getString(R.string.task_reminder);
+        int requestCode = buildStableCode(task.getId(), task.getTitle(), null);
+        scheduleExactReminder(context, title, message, triggerAtMillis, requestCode);
     }
 
-    private static int buildEventRequestCode(Event event) {
-        String idPart = event.getId() != null ? event.getId() : "";
-        String key = idPart + "|" + event.getDay() + "|" + event.getReminderTime();
+    /**
+     * Convenience helper for events (including after-school) to schedule an exact reminder.
+     */
+    public static void scheduleEventReminder(Context context, Event event, long triggerAtMillis) {
+        if (event == null) return;
+        String title = context.getString(R.string.app_name);
+        String message = event.getTitle();
+        int requestCode = buildStableCode(event.getId(), event.getDay(), event.getTitle());
+        scheduleExactReminder(context, title, message, triggerAtMillis, requestCode);
+    }
+
+    private static int buildStableCode(String id, String part1, String part2) {
+        String safeId = id != null ? id : "";
+        String p1 = part1 != null ? part1 : "";
+        String p2 = part2 != null ? part2 : "";
+        String key = safeId + "|" + p1 + "|" + p2;
         return key.hashCode();
     }
 }
