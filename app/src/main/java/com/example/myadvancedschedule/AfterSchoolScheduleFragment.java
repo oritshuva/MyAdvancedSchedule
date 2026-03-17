@@ -97,16 +97,20 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
             @Override
             public void onReminder(Lesson lesson) {
-                if (getContext() == null) return;
-                ReminderUtils.showDateTimePicker(requireContext(), triggerAt -> {
+                if (!isAdded()) return;
+                ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
+                dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
+                    if (!isAdded()) return;
                     Event event = new Event();
                     event.setId(lesson.getId());
                     event.setTitle(lesson.getSubject());
                     event.setDay(lesson.getDay());
                     event.setType("after_school");
-                    ReminderUtils.scheduleEventReminder(requireContext(), event, triggerAt);
+                    event.setNote(noteText);
+                    ReminderUtils.scheduleEventReminder(requireContext(), event, triggerAt, noteText);
                     Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
                 });
+                dialog.show(getParentFragmentManager(), "AfterSchoolReminderDialog");
             }
 
             @Override

@@ -86,11 +86,14 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onTaskReminderRequested(Task task) {
-                if (getContext() == null) return;
-                ReminderUtils.showDateTimePicker(requireContext(), triggerAt -> {
-                    ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt);
+                if (!isAdded()) return;
+                ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
+                dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
+                    if (!isAdded()) return;
+                    ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt, noteText);
                     Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
                 });
+                dialog.show(getParentFragmentManager(), "TaskReminderDialog");
             }
         });
         recyclerTasks.setLayoutManager(new LinearLayoutManager(requireContext()));
