@@ -84,9 +84,29 @@ public class LoginActivity extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
                         Toast.makeText(LoginActivity.this, "ההתחברות הצליחה", Toast.LENGTH_SHORT).show();
-                        Intent intent = new Intent(LoginActivity.this, SetupScheduleActivity.class);
-                        startActivity(intent);
-                        finish();
+
+                        // Decide whether to go straight to the main screen or run setup
+                        // based on whether the user already has lessons in Firestore.
+                        FirestoreHelper helper = new FirestoreHelper();
+                        helper.getAllLessons(new FirestoreHelper.OnLessonsLoadedListener() {
+                            @Override
+                            public void onLessonsLoaded(java.util.List<Lesson> lessons) {
+                                Class<?> target = (lessons != null && !lessons.isEmpty())
+                                        ? MainActivity.class
+                                        : SetupScheduleActivity.class;
+                                Intent intent = new Intent(LoginActivity.this, target);
+                                startActivity(intent);
+                                finish();
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                // On error, fall back to setup so the user can rebuild.
+                                Intent intent = new Intent(LoginActivity.this, SetupScheduleActivity.class);
+                                startActivity(intent);
+                                finish();
+                            }
+                        });
                     } else {
                         Toast.makeText(LoginActivity.this, "ההתחברות נכשלה", Toast.LENGTH_SHORT).show();
                     }

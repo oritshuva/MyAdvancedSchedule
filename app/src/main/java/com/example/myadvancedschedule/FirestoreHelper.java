@@ -127,24 +127,31 @@ public class FirestoreHelper {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<Lesson> lessons = new ArrayList<>();
                     for (QueryDocumentSnapshot document : queryDocumentSnapshots) {
-                        String id = document.getId();
-                        String subject = document.getString("subject");
-                        String teacher = document.getString("teacher");
-                        String classroom = document.getString("classroom");
-                        String day = document.getString("day");
-                        Long periodLong = document.getLong("period");
-                        int period = periodLong != null ? periodLong.intValue() : 0;
-                        String startTime = document.getString("startTime");
-                        String endTime = document.getString("endTime");
-                        String scheduleType = document.getString("scheduleType");
+                        try {
+                            String id = document.getId();
+                            String subject = document.getString("subject");
+                            String teacher = document.getString("teacher");
+                            String classroom = document.getString("classroom");
+                            String day = document.getString("day");
+                            Long periodLong = document.getLong("period");
+                            int period = periodLong != null ? periodLong.intValue() : 0;
+                            String startTime = document.getString("startTime");
+                            String endTime = document.getString("endTime");
+                            String scheduleType = document.getString("scheduleType");
 
-                        Lesson lesson = new Lesson(id, subject, teacher, classroom, day, period, startTime, endTime);
-                        if (scheduleType != null) lesson.setScheduleType(scheduleType);
-                        lessons.add(lesson);
+                            // Skip obviously malformed documents to avoid crashes.
+                            if (day == null || day.trim().isEmpty()) continue;
+
+                            Lesson lesson = new Lesson(id, subject, teacher, classroom, day, period, startTime, endTime);
+                            if (scheduleType != null) lesson.setScheduleType(scheduleType);
+                            lessons.add(lesson);
+                        } catch (Exception ignored) {
+                            // Ignore a single bad document and continue loading the rest.
+                        }
                     }
                     listener.onLessonsLoaded(lessons);
                 })
-                .addOnFailureListener(e -> listener.onError(e.getMessage()));
+                .addOnFailureListener(e -> listener.onError(e != null ? e.getMessage() : "Failed to load lessons"));
     }
 
     /** Load lessons for a specific day filtered by scheduleType ("school" or "after_school"). */
@@ -221,11 +228,15 @@ public class FirestoreHelper {
                 .addOnSuccessListener(snap -> {
                     List<Task> tasks = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : snap) {
+                        boolean completed = Boolean.TRUE.equals(doc.getBoolean("completed"));
+                        // Hide completed tasks from the main list; they are effectively "done".
+                        if (completed) continue;
+
                         Task t = new Task(
                                 doc.getId(),
                                 doc.getString("title"),
                                 doc.getString("dueTime"),
-                                Boolean.TRUE.equals(doc.getBoolean("completed"))
+                                completed
                         );
                         tasks.add(t);
                     }

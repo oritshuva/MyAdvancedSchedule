@@ -98,7 +98,7 @@ public class ReminderDialogFragment extends DialogFragment {
                     } catch (Exception e) {
                         android.widget.Toast.makeText(
                                 getContext(),
-                                R.string.error_load_lessons,
+                                R.string.reminder_error_generic,
                                 android.widget.Toast.LENGTH_SHORT
                         ).show();
                     }
