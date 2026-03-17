@@ -39,7 +39,16 @@ public class ReminderDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        View view = LayoutInflater.from(requireContext())
+        android.content.Context context = getContext();
+        if (context == null) {
+            // Defensive: fallback to a very simple dialog instead of crashing if fragment is detached.
+            return new AlertDialog.Builder(requireActivity() != null ? requireActivity() : new android.view.ContextThemeWrapper(null, 0))
+                    .setMessage(R.string.reminder_error_generic)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .create();
+        }
+
+        View view = LayoutInflater.from(context)
                 .inflate(R.layout.dialog_reminder, null, false);
 
         DatePicker datePicker = view.findViewById(R.id.datePicker);
@@ -55,7 +64,7 @@ public class ReminderDialogFragment extends DialogFragment {
             timePicker.setMinute(now.get(Calendar.MINUTE));
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setView(view)
                 .setPositiveButton(R.string.reminder_save, (dialog, which) -> {
                     if (listener == null || getContext() == null) return;
