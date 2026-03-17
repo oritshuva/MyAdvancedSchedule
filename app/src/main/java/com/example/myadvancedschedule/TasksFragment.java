@@ -93,7 +93,7 @@ public class TasksFragment extends Fragment {
             @Override
             public void onTaskReminderRequested(Task task) {
                 if (!isAdded()) return;
-                TaskReminderDialogFragment dialog = TaskReminderDialogFragment.newInstance();
+                ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
                     if (!isAdded()) return;
                     String uid = FirebaseAuth.getInstance().getCurrentUser() != null
