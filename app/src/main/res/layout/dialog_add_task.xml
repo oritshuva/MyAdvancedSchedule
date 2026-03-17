@@ -20,18 +20,27 @@
             android:maxLines="2" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+    <!-- Date + time pickers for due date/time (no manual typing) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:hint="@string/task_due_hint">
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/editDueTime"
-            android:layout_width="match_parent"
+        <Button
+            android:id="@+id/buttonDueTime"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="time"
-            android:text="12:00" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            android:text="@string/task_due_hint" />
+
+        <Button
+            android:id="@+id/buttonDueDate"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="@string/reminder_dialog_title" />
+    </LinearLayout>
 </LinearLayout>

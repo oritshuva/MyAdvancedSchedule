@@ -17,18 +17,18 @@
             android:textAppearance="?attr/textAppearanceHeadline6"
             android:paddingBottom="8dp" />
 
-        <DatePicker
-            android:id="@+id/datePicker"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:calendarViewShown="true" />
-
         <TimePicker
             android:id="@+id/timePicker"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:timePickerMode="spinner"
             android:layout_marginTop="12dp" />
+
+        <DatePicker
+            android:id="@+id/datePicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:calendarViewShown="true" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="match_parent"
