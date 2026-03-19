@@ -56,7 +56,10 @@ public class TasksFragment extends Fragment {
 
                         @Override
                         public void onFailure(String error) {
-                            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                            if (!isAdded()) return;
+                            android.content.Context ctx = getContext();
+                            if (ctx == null) return;
+                            Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                         }
                     });
                 }
@@ -73,7 +76,10 @@ public class TasksFragment extends Fragment {
 
                     @Override
                     public void onFailure(String error) {
-                        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        android.content.Context ctx = getContext();
+                        if (ctx == null) return;
+                        Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -96,10 +102,12 @@ public class TasksFragment extends Fragment {
                 ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
                     if (!isAdded()) return;
+                    android.content.Context ctx = getContext();
+                    if (ctx == null) return;
                     String uid = FirebaseAuth.getInstance().getCurrentUser() != null
                             ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
                     if (uid == null) {
-                        Toast.makeText(requireContext(), R.string.login_failed, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ctx, R.string.login_failed, Toast.LENGTH_SHORT).show();
                         return;
                     }
                     // Persist reminder metadata on the task, then schedule the notification.
@@ -108,13 +116,19 @@ public class TasksFragment extends Fragment {
                     firestoreHelper.updateTask(uid, task, new FirestoreHelper.OnOperationCompleteListener() {
                         @Override
                         public void onSuccess() {
-                            ReminderUtils.scheduleTaskReminder(requireContext(), task, triggerAt, noteText);
-                            Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                            if (!isAdded()) return;
+                            android.content.Context successCtx = getContext();
+                            if (successCtx == null) return;
+                            ReminderUtils.scheduleTaskReminder(successCtx, task, triggerAt, noteText);
+                            Toast.makeText(successCtx, R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
                         }
 
                         @Override
                         public void onFailure(String error) {
-                            Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                            if (!isAdded()) return;
+                            android.content.Context failCtx = getContext();
+                            if (failCtx == null) return;
+                            Toast.makeText(failCtx, error, Toast.LENGTH_SHORT).show();
                         }
                     });
                 });
@@ -154,7 +168,10 @@ public class TasksFragment extends Fragment {
             }
             @Override
             public void onError(String error) {
-                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                if (!isAdded()) return;
+                android.content.Context ctx = getContext();
+                if (ctx == null) return;
+                Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                 emptyView.setVisibility(View.VISIBLE);
                 recyclerTasks.setVisibility(View.GONE);
             }

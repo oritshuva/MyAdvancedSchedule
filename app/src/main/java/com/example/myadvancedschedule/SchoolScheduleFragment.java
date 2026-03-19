@@ -43,6 +43,8 @@ public class SchoolScheduleFragment extends Fragment {
     private MaterialButton btnSaveChanges;
     private TextView textEditModeIndicator;
     private boolean editMode = false;
+    private boolean isLoadingLessons = false;
+    private boolean isSavingEdits = false;
     private final Map<String, Lesson> originalEditableLessonsById = new HashMap<>();
 
     @Nullable
@@ -138,8 +140,12 @@ public class SchoolScheduleFragment extends Fragment {
     }
 
     private void updateEditControls() {
-        if (!isAdded()) return;
+        // Don't gate on `isAdded()` here: the edit/save buttons must be wired as soon
+        // as the view hierarchy exists, otherwise UI tests (and early user taps)
+        // may click before listeners are attached.
+        if (tabDays == null || btnEditSchedule == null || btnSaveChanges == null) return;
         boolean canEditDay = currentDayName != null && !currentDayName.trim().isEmpty();
+        boolean canEditNow = canEditDay && !isSavingEdits;
 
         if (editMode) {
             if (btnEditSchedule != null) btnEditSchedule.setVisibility(View.GONE);
@@ -148,11 +154,11 @@ public class SchoolScheduleFragment extends Fragment {
             if (tabDays != null) tabDays.setEnabled(false);
         } else {
             if (textEditModeIndicator != null) textEditModeIndicator.setVisibility(View.GONE);
-            if (tabDays != null) tabDays.setEnabled(true);
+            if (tabDays != null) tabDays.setEnabled(!isLoadingLessons && !isSavingEdits);
 
             if (btnEditSchedule != null) {
                 btnEditSchedule.setVisibility(View.VISIBLE);
-                btnEditSchedule.setEnabled(canEditDay);
+                btnEditSchedule.setEnabled(canEditNow);
             }
             if (btnSaveChanges != null) btnSaveChanges.setVisibility(View.GONE);
         }
@@ -166,6 +172,10 @@ public class SchoolScheduleFragment extends Fragment {
 
     private void enterEditModeIfAllowed() {
         if (!isAdded()) return;
+        if (isSavingEdits) {
+            Toast.makeText(requireContext(), "Saving changes… Please wait.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (currentDayName == null || currentDayName.trim().isEmpty()) {
             Toast.makeText(requireContext(), getString(R.string.edit_schedule_only_today), Toast.LENGTH_SHORT).show();
             return;
@@ -209,15 +219,18 @@ public class SchoolScheduleFragment extends Fragment {
     private void saveEdits() {
         if (!isAdded()) return;
         if (!editMode) return;
+        isSavingEdits = true;
 
         String userId = firestoreHelper != null ? firestoreHelper.getCurrentUserId() : null;
         if (userId == null) {
+            isSavingEdits = false;
             Toast.makeText(requireContext(), getString(R.string.error_saving_lesson), Toast.LENGTH_SHORT).show();
             return;
         }
 
         List<Lesson> editableLessons = adapter.getEditableSchoolLessons();
         if (editableLessons.isEmpty()) {
+            isSavingEdits = false;
             Toast.makeText(requireContext(), getString(R.string.save_changes), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -233,16 +246,19 @@ public class SchoolScheduleFragment extends Fragment {
             if (subjectNow.isEmpty()) {
                 // If validation fails, reload to restore consistent UI/state.
                 Toast.makeText(requireContext(), getString(R.string.error_empty_subject), Toast.LENGTH_SHORT).show();
+                isSavingEdits = false;
                 loadLessonsForCurrentDay();
                 return;
             }
             if (teacherNow.isEmpty()) {
                 Toast.makeText(requireContext(), getString(R.string.error_empty_teacher), Toast.LENGTH_SHORT).show();
+                isSavingEdits = false;
                 loadLessonsForCurrentDay();
                 return;
             }
             if (classroomNow.isEmpty()) {
                 Toast.makeText(requireContext(), getString(R.string.error_empty_classroom), Toast.LENGTH_SHORT).show();
+                isSavingEdits = false;
                 loadLessonsForCurrentDay();
                 return;
             }
@@ -269,6 +285,7 @@ public class SchoolScheduleFragment extends Fragment {
         if (lessonsToUpdate.isEmpty()) {
             Toast.makeText(requireContext(), getString(R.string.save_changes), Toast.LENGTH_SHORT).show();
             exitEditModeIfNeeded();
+            isSavingEdits = false;
             return;
         }
 
@@ -276,29 +293,39 @@ public class SchoolScheduleFragment extends Fragment {
         exitEditModeIfNeeded();
 
         progressBar.setVisibility(View.VISIBLE);
-        recyclerLessons.setVisibility(View.GONE);
+        if (recyclerLessons != null) recyclerLessons.setEnabled(false);
         if (emptyView != null) emptyView.setVisibility(View.GONE);
 
         java.util.concurrent.atomic.AtomicInteger done = new java.util.concurrent.atomic.AtomicInteger(0);
         java.util.concurrent.atomic.AtomicBoolean anyFailure = new java.util.concurrent.atomic.AtomicBoolean(false);
+        final String dayAtStart = currentDayName;
 
         for (Lesson l : lessonsToUpdate) {
             firestoreHelper.updateLesson(userId, l, new FirestoreHelper.OnOperationCompleteListener() {
                 @Override
                 public void onSuccess() {
+                    if (!isAdded()) return;
                     int completed = done.incrementAndGet();
                     if (completed >= lessonsToUpdate.size() && !anyFailure.get()) {
                         progressBar.setVisibility(View.GONE);
-                        if (emptyView != null) emptyView.setVisibility(View.GONE);
-                        recyclerLessons.setVisibility(View.VISIBLE);
-                        Toast.makeText(requireContext(), getString(R.string.lesson_updated), Toast.LENGTH_SHORT).show();
+                        if (recyclerLessons != null) recyclerLessons.setEnabled(true);
+                        isSavingEdits = false;
+                        updateEditControls();
+                        if (dayAtStart == null || dayAtStart.equals(currentDayName)) {
+                            if (emptyView != null) emptyView.setVisibility(View.GONE);
+                            Toast.makeText(requireContext(), getString(R.string.lesson_updated), Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }
 
                 @Override
                 public void onFailure(String error) {
+                    if (!isAdded()) return;
                     if (anyFailure.compareAndSet(false, true)) {
                         progressBar.setVisibility(View.GONE);
+                        if (recyclerLessons != null) recyclerLessons.setEnabled(true);
+                        isSavingEdits = false;
+                        updateEditControls();
                         Toast.makeText(requireContext(), getString(R.string.error_saving_lesson) + ": " + error, Toast.LENGTH_LONG).show();
                         loadLessonsForCurrentDay();
                     }
@@ -322,24 +349,32 @@ public class SchoolScheduleFragment extends Fragment {
 
     private void loadLessonsForCurrentDay() {
         String day = currentDayName != null ? currentDayName : ScheduleFragmentHelper.getTodayDayName();
+        isLoadingLessons = true;
+        updateEditControls();
         progressBar.setVisibility(View.VISIBLE);
         recyclerLessons.setVisibility(View.GONE);
         emptyView.setVisibility(View.GONE);
         firestoreHelper.getLessonsForToday("school", day, new FirestoreHelper.OnLessonsLoadedListener() {
             @Override
             public void onLessonsLoaded(List<Lesson> lessons) {
+                if (!isAdded()) return;
+                isLoadingLessons = false;
                 progressBar.setVisibility(View.GONE);
                 adapter.setLessons(lessons);
                 boolean empty = lessons == null || lessons.isEmpty();
                 emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
                 recyclerLessons.setVisibility(empty ? View.GONE : View.VISIBLE);
+                updateEditControls();
             }
             @Override
             public void onError(String error) {
+                if (!isAdded()) return;
+                isLoadingLessons = false;
                 progressBar.setVisibility(View.GONE);
                 Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
                 emptyView.setVisibility(View.VISIBLE);
                 recyclerLessons.setVisibility(View.GONE);
+                updateEditControls();
             }
         });
     }

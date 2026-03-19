@@ -46,6 +46,7 @@ public final class ReminderUtils {
 
     /** Generic API to show a reminder notification immediately. */
     public static void showReminderNotification(Context context, String title, String message) {
+        if (context == null) return;
         ensureChannel(context);
         String finalTitle = title != null && !title.trim().isEmpty()
                 ? title
@@ -80,12 +81,18 @@ public final class ReminderUtils {
         intent.putExtra(ReminderReceiver.EXTRA_TITLE, title);
         intent.putExtra(ReminderReceiver.EXTRA_MESSAGE, message);
 
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+        PendingIntent pendingIntent;
+        try {
+            pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    requestCode,
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+        } catch (IllegalArgumentException e) {
+            // Cannot create PendingIntent (invalid requestCode/intent). Fail silently.
+            return;
+        }
 
         try {
             boolean canUseExact = true;
@@ -130,6 +137,10 @@ public final class ReminderUtils {
                         pendingIntent
                 );
             }
+        } catch (Exception e) {
+            // Any other runtime issues (OEM alarm limitations, IllegalArgumentException, etc.)
+            // should not crash the app.
+            return;
         }
     }
 
@@ -137,6 +148,7 @@ public final class ReminderUtils {
      * Convenience helper for tasks to schedule an exact reminder.
      */
     public static void scheduleTaskReminder(Context context, Task task, long triggerAtMillis) {
+        if (context == null) return;
         if (task == null) return;
         String title = context.getString(R.string.app_name);
         String message = task.getTitle() != null ? task.getTitle() : context.getString(R.string.task_reminder);
@@ -149,6 +161,7 @@ public final class ReminderUtils {
      * Title will be the task name and content text will be the reminder note.
      */
     public static void scheduleTaskReminder(Context context, Task task, long triggerAtMillis, String reminderText) {
+        if (context == null) return;
         if (task == null) return;
         String title = task.getTitle() != null ? task.getTitle() : context.getString(R.string.app_name);
         String message = (reminderText != null && !reminderText.trim().isEmpty())
@@ -162,6 +175,7 @@ public final class ReminderUtils {
      * Convenience helper for events (including after-school) to schedule an exact reminder.
      */
     public static void scheduleEventReminder(Context context, Event event, long triggerAtMillis) {
+        if (context == null) return;
         if (event == null) return;
         String title = context.getString(R.string.app_name);
         String message = event.getTitle();
@@ -174,6 +188,7 @@ public final class ReminderUtils {
      * Title will be the event name and content text will be the reminder note.
      */
     public static void scheduleEventReminder(Context context, Event event, long triggerAtMillis, String reminderText) {
+        if (context == null) return;
         if (event == null) return;
         String title = event.getTitle() != null ? event.getTitle() : context.getString(R.string.app_name);
         String message = (reminderText != null && !reminderText.trim().isEmpty())

@@ -78,11 +78,11 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     }
 
     private static boolean isFreePeriod(Lesson lesson) {
+        // Free-period placeholders created by the adapter have no Firestore ID.
+        // Do not rely on the subject text, because users might edit a real lesson
+        // to match the placeholder label.
         if (lesson == null) return true;
-        String subject = lesson.getSubject();
-        return subject == null
-                || subject.trim().isEmpty()
-                || "Free period / חלון".equals(subject);
+        return lesson.getId() == null;
     }
 
     public void setOnLessonClickListener(OnLessonClickListener listener) {

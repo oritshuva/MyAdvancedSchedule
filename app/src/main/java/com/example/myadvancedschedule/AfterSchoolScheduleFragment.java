@@ -65,7 +65,10 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
                     @Override
                     public void onFailure(String error) {
-                        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        android.content.Context ctx = getContext();
+                        if (ctx == null) return;
+                        Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -101,14 +104,16 @@ public class AfterSchoolScheduleFragment extends Fragment {
                 ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
                     if (!isAdded()) return;
+                    android.content.Context ctx = getContext();
+                    if (ctx == null) return;
                     Event event = new Event();
                     event.setId(lesson.getId());
                     event.setTitle(lesson.getSubject());
                     event.setDay(lesson.getDay());
                     event.setType("after_school");
                     event.setNote(noteText);
-                    ReminderUtils.scheduleEventReminder(requireContext(), event, triggerAt, noteText);
-                    Toast.makeText(requireContext(), R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
+                    ReminderUtils.scheduleEventReminder(ctx, event, triggerAt, noteText);
+                    Toast.makeText(ctx, R.string.reminder_scheduled, Toast.LENGTH_SHORT).show();
                 });
                 dialog.show(getParentFragmentManager(), "AfterSchoolReminderDialog");
             }
@@ -130,7 +135,10 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
                     @Override
                     public void onFailure(String error) {
-                        Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                        if (!isAdded()) return;
+                        android.content.Context ctx = getContext();
+                        if (ctx == null) return;
+                        Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -262,7 +270,10 @@ public class AfterSchoolScheduleFragment extends Fragment {
             @Override
             public void onError(String error) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), error, Toast.LENGTH_SHORT).show();
+                if (!isAdded()) return;
+                android.content.Context ctx = getContext();
+                if (ctx == null) return;
+                Toast.makeText(ctx, error, Toast.LENGTH_SHORT).show();
                 emptyView.setVisibility(View.VISIBLE);
                 recyclerLessons.setVisibility(View.GONE);
             }
