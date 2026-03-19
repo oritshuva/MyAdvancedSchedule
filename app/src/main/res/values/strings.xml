@@ -153,11 +153,10 @@
     <string name="today_schedule_title">%1$s - School schedule</string>
     <string name="today_after_school_title">%1$s - After-school schedule</string>
 
-    <!-- Edit schedule -->
-    <string name="edit_schedule">Edit Schedule</string>
-    <string name="save_changes">Save Changes</string>
-    <string name="editing_today_indicator">Editing selected day</string>
-    <string name="edit_schedule_only_today">You can edit only today’s schedule.</string>
+    <!-- Schedule edit help -->
+    <string name="how_to_edit">How to Edit?</string>
+    <string name="how_to_edit_title">Editing lessons</string>
+    <string name="how_to_edit_message">To edit a lesson, simply tap on it. You can then change the subject, teacher, or classroom and save your changes.</string>
 
     <!-- Lesson card formatting -->
     <string name="lesson_number_format">Lesson %1$d</string>
