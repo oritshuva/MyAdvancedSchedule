@@ -19,6 +19,49 @@ public class FirestoreHelper {
     private static final String COLLECTION_TASKS = "tasks";
     private static final String COLLECTION_SUBJECTS = "subjects";
 
+    // --------------------------
+    // In-memory test mode hooks
+    // --------------------------
+    // Used by instrumentation tests to verify edit/save/persist logic without hitting real Firebase.
+    private static final Object TEST_LOCK = new Object();
+    private static volatile String testUserIdOverride;
+    private static volatile Map<String, Lesson> testLessonsByDocId;
+
+    /** Enable in-memory lessons for instrumentation tests. */
+    public static void setInMemoryLessonsForTests(String userId, List<Lesson> lessons) {
+        synchronized (TEST_LOCK) {
+            testUserIdOverride = userId;
+            Map<String, Lesson> map = new HashMap<>();
+            if (lessons != null) {
+                for (Lesson l : lessons) {
+                    if (l == null || l.getId() == null) continue;
+                    map.put(l.getId(), cloneLesson(l));
+                }
+            }
+            testLessonsByDocId = map;
+        }
+    }
+
+    /** Disable in-memory test mode. */
+    public static void clearInMemoryLessonsForTests() {
+        synchronized (TEST_LOCK) {
+            testUserIdOverride = null;
+            testLessonsByDocId = null;
+        }
+    }
+
+    /** Snapshot of in-memory lessons (for assertions). */
+    public static List<Lesson> getInMemoryLessonsSnapshot() {
+        synchronized (TEST_LOCK) {
+            if (testLessonsByDocId == null) return new ArrayList<>();
+            List<Lesson> out = new ArrayList<>();
+            for (Lesson l : testLessonsByDocId.values()) {
+                out.add(cloneLesson(l));
+            }
+            return out;
+        }
+    }
+
     public FirestoreHelper() {
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
@@ -26,8 +69,30 @@ public class FirestoreHelper {
 
     // קבלת UID של המשתמש המחובר
     private String getUserId() {
+        String override = testUserIdOverride;
+        if (override != null && !override.trim().isEmpty()) return override;
         FirebaseUser currentUser = mAuth.getCurrentUser();
         return currentUser != null ? currentUser.getUid() : null;
+    }
+
+    /** Public wrapper for production + test code. */
+    public String getCurrentUserId() {
+        return getUserId();
+    }
+
+    private static Lesson cloneLesson(Lesson original) {
+        Lesson copy = new Lesson(
+                original.getId(),
+                original.getSubject(),
+                original.getTeacher(),
+                original.getClassroom(),
+                original.getDay(),
+                original.getPeriod(),
+                original.getStartTime(),
+                original.getEndTime()
+        );
+        copy.setScheduleType(original.getScheduleType());
+        return copy;
     }
 
     // ממשק להאזנה לטעינת שיעורים
@@ -86,6 +151,31 @@ public class FirestoreHelper {
             return;
         }
 
+        // In-memory test mode.
+        Map<String, Lesson> local;
+        synchronized (TEST_LOCK) {
+            local = testLessonsByDocId;
+        }
+        if (local != null && lesson != null && lesson.getId() != null) {
+            synchronized (TEST_LOCK) {
+                Lesson existing = testLessonsByDocId.get(lesson.getId());
+                if (existing == null) {
+                    testLessonsByDocId.put(lesson.getId(), cloneLesson(lesson));
+                } else {
+                    existing.setSubject(lesson.getSubject());
+                    existing.setTeacher(lesson.getTeacher());
+                    existing.setClassroom(lesson.getClassroom());
+                    existing.setDay(lesson.getDay());
+                    existing.setPeriod(lesson.getPeriod());
+                    existing.setStartTime(lesson.getStartTime());
+                    existing.setEndTime(lesson.getEndTime());
+                    existing.setScheduleType(lesson.getScheduleType() != null ? lesson.getScheduleType() : "school");
+                }
+            }
+            listener.onSuccess();
+            return;
+        }
+
         Map<String, Object> lessonData = new HashMap<>();
         lessonData.put("userId", userId);
         lessonData.put("subject", lesson.getSubject());  // 🔥 תוקן
@@ -118,6 +208,22 @@ public class FirestoreHelper {
         String userId = getUserId();
         if (userId == null) {
             listener.onError("User not logged in");
+            return;
+        }
+
+        // In-memory test mode.
+        Map<String, Lesson> local;
+        synchronized (TEST_LOCK) {
+            local = testLessonsByDocId;
+        }
+        if (local != null) {
+            List<Lesson> out = new ArrayList<>();
+            synchronized (TEST_LOCK) {
+                for (Lesson l : local.values()) {
+                    out.add(cloneLesson(l));
+                }
+            }
+            listener.onLessonsLoaded(out);
             return;
         }
 
