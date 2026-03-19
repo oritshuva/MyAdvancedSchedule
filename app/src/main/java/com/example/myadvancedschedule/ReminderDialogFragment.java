@@ -7,7 +7,8 @@ import android.view.View;
 import android.widget.DatePicker;
 import android.widget.TimePicker;
 
-import androidx.annotation.NonNull;
+import android.content.Context;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
@@ -36,17 +37,13 @@ public class ReminderDialogFragment extends DialogFragment {
         this.listener = listener;
     }
 
-    @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        android.content.Context context = getContext();
-        if (context == null) {
-            // Defensive: fallback to a very simple dialog instead of crashing if fragment is detached.
-            return new AlertDialog.Builder(requireActivity() != null ? requireActivity() : new android.view.ContextThemeWrapper(null, 0))
-                    .setMessage(R.string.reminder_error_generic)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .create();
-        }
+        // Note: in rare cases the fragment can be detached while the dialog is being built.
+        // We must not use `requireActivity()` / `requireContext()` in that case.
+        Context context = getContext();
+        if (context == null) context = getActivity();
+        if (context == null) return null;
 
         View view = LayoutInflater.from(context)
                 .inflate(R.layout.dialog_reminder, null, false);
@@ -67,7 +64,9 @@ public class ReminderDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setView(view)
                 .setPositiveButton(R.string.reminder_save, (dialog, which) -> {
-                    if (listener == null || getContext() == null) return;
+                    Context safeContext = getContext();
+                    if (safeContext == null) safeContext = getActivity();
+                    if (listener == null || safeContext == null) return;
                     try {
                         int year = datePicker.getYear();
                         int month = datePicker.getMonth();
@@ -91,11 +90,8 @@ public class ReminderDialogFragment extends DialogFragment {
 
                         long triggerAt = selected.getTimeInMillis();
                         if (triggerAt <= System.currentTimeMillis()) {
-                            android.widget.Toast.makeText(
-                                    getContext(),
-                                    R.string.reminder_time_in_past,
-                                    android.widget.Toast.LENGTH_SHORT
-                            ).show();
+                            android.widget.Toast.makeText(safeContext, R.string.reminder_time_in_past,
+                                    android.widget.Toast.LENGTH_SHORT).show();
                             return;
                         }
 
@@ -105,11 +101,13 @@ public class ReminderDialogFragment extends DialogFragment {
                         }
                         listener.onReminderConfirmed(triggerAt, note);
                     } catch (Exception e) {
-                        android.widget.Toast.makeText(
-                                getContext(),
-                                R.string.reminder_error_generic,
-                                android.widget.Toast.LENGTH_SHORT
-                        ).show();
+                        android.content.Context toastContext = getContext();
+                        if (toastContext == null) toastContext = getActivity();
+                        if (toastContext != null) {
+                            android.widget.Toast.makeText(toastContext,
+                                    R.string.reminder_error_generic,
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        }
                     }
                 })
                 .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss());

@@ -6,6 +6,9 @@ import android.widget.FrameLayout;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+/**
+ * Test-only activity used by instrumentation tests to render fragments.
+ */
 public class TestHostActivity extends AppCompatActivity {
     static final int CONTAINER_ID = 0x7f0b00aa; // Arbitrary stable ID for test-only fragment container.
 

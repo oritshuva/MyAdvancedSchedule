@@ -4,7 +4,6 @@
     <application>
         <activity
             android:name="com.example.myadvancedschedule.TestHostActivity"
-            android:process="com.example.myadvancedschedule"
             android:exported="true" />
     </application>
 

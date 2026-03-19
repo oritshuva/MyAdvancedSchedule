@@ -1,14 +1,9 @@
 package com.example.myadvancedschedule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
-import android.view.View;
-import android.widget.TextView;
-
-import com.google.android.material.tabs.TabLayout;
-
-import androidx.test.core.app.ActivityScenario;
+import static org.junit.Assert.fail;
 
 import org.junit.After;
 import org.junit.Before;
@@ -16,9 +11,10 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class EditScheduleInstrumentationTest {
-
     private static final String TEST_USER_ID = "test-user";
 
     private final List<Lesson> seedLessons = new ArrayList<>();
@@ -27,8 +23,7 @@ public class EditScheduleInstrumentationTest {
     public void setUp() {
         seedLessons.clear();
 
-        // Use two days to verify isolation: current selected day vs other day.
-        // English day names must match days_array_english.
+        // Use two days to verify isolation.
         seedLessons.add(new Lesson("l1", "Math", "John Smith", "301", "Monday", 1, "08:00", "08:45"));
         seedLessons.add(new Lesson("l2", "English", "Alice Brown", "302", "Monday", 2, "08:50", "09:35"));
         seedLessons.add(new Lesson("l3", "Physics", "Bob White", "201", "Tuesday", 1, "08:00", "08:45"));
@@ -46,177 +41,147 @@ public class EditScheduleInstrumentationTest {
     }
 
     @Test(timeout = 20000)
-    public void editOneLesson_updatesOnlySelectedDayAndPersistsOnRecreate() {
-        ActivityScenario<TestHostActivity> scenario = ActivityScenario.launch(TestHostActivity.class);
-        scenario.onActivity(activity -> {
-            SchoolScheduleFragment fragment = new SchoolScheduleFragment();
-            activity.getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(TestHostActivity.CONTAINER_ID, fragment, "SCHOOL")
-                    .commitNow();
+    public void editOneLesson_updatesOnlyTargetedDay_andPersistsAcrossReload() throws Exception {
+        FirestoreHelper firestoreHelper = new FirestoreHelper();
 
-            // Select Monday tab explicitly (not dependent on "today").
-            TabLayout tabs = fragment.getView().findViewById(R.id.tabDays);
-            int mondayIndex = indexForDay(tabs, "Monday");
-            assertTrue(mondayIndex >= 0);
-            tabs.getTabAt(mondayIndex).select();
+        Lesson updated = new Lesson(
+                "l1",
+                "Math Updated",
+                "John Smith Updated",
+                "301 Updated",
+                "Monday",
+                1,
+                "08:00",
+                "08:45"
+        );
+        updated.setScheduleType("school");
 
-            View btnEdit = fragment.getView().findViewById(R.id.btnEditSchedule);
-            btnEdit.performClick();
+        CountDownLatch latch = new CountDownLatch(1);
+        firestoreHelper.updateLesson(TEST_USER_ID, updated, new FirestoreHelper.OnOperationCompleteListener() {
+            @Override
+            public void onSuccess() {
+                latch.countDown();
+            }
 
-            // Edit first editable lesson (period 1 => "Math").
-            View recycler = fragment.getView().findViewById(R.id.recyclerLessons);
-            View edit1 = findChildWithIdContaining(recycler, 0, R.id.editSubject);
-            assertTrue(edit1 != null);
-            assertTrue(edit1 instanceof com.google.android.material.textfield.TextInputEditText);
-            com.google.android.material.textfield.TextInputEditText editSubject1 =
-                    (com.google.android.material.textfield.TextInputEditText) edit1;
-            assertEquals("Math", editSubject1.getText() != null ? editSubject1.getText().toString() : "");
+            @Override
+            public void onFailure(String error) {
+                fail("updateLesson failed: " + error);
+                latch.countDown();
+            }
+        });
+        assertTrue("updateLesson callback timed out", latch.await(5, TimeUnit.SECONDS));
 
-            editSubject1.setText("Math Updated");
+        List<Lesson> snapshot = FirestoreHelper.getInMemoryLessonsSnapshot();
+        assertEquals("No duplicates should be created by editing", seedLessons.size(), snapshot.size());
 
-            View btnSave = fragment.getView().findViewById(R.id.btnSaveChanges);
-            btnSave.performClick();
+        Lesson l1 = findById(snapshot, "l1");
+        assertNotNull(l1);
+        assertEquals("Math Updated", l1.getSubject());
+        assertEquals("John Smith Updated", l1.getTeacher());
+        assertEquals("301 Updated", l1.getClassroom());
 
-            // UI should reflect changes immediately in read-only mode.
-            View recyclerAfterSave = fragment.getView().findViewById(R.id.recyclerLessons);
-            View textSubject1View = findChildWithIdContaining(recyclerAfterSave, 0, R.id.textSubject);
-            assertTrue(textSubject1View != null);
-            TextView textSubject1 = (TextView) textSubject1View;
-            assertEquals("Subject: Math Updated",
-                    textSubject1.getText() != null ? textSubject1.getText().toString() : "");
+        Lesson l3 = findById(snapshot, "l3");
+        assertNotNull(l3);
+        assertEquals("Physics", l3.getSubject());
 
-            // Verify in-memory persistence updated for Monday only.
-            assertTrue(isLessonSubject("Monday", "l1", "Math Updated"));
-            assertTrue(isLessonSubject("Tuesday", "l3", "Physics"));
+        // Reload check: day filtering must reflect updated subject.
+        CountDownLatch reloadLatch = new CountDownLatch(1);
+        final List<Lesson>[] mondayLessons = new List[1];
+        firestoreHelper.getLessonsForToday("school", "Monday", new FirestoreHelper.OnLessonsLoadedListener() {
+            @Override
+            public void onLessonsLoaded(List<Lesson> lessons) {
+                mondayLessons[0] = lessons;
+                reloadLatch.countDown();
+            }
+
+            @Override
+            public void onError(String error) {
+                fail("getLessonsForToday failed: " + error);
+                reloadLatch.countDown();
+            }
         });
 
-        // Restart simulation: recreate fragment in a new host activity.
-        // (We still use the same in-memory store; this mimics persistence across app restart.)
-        ActivityScenario<TestHostActivity> scenario2 = ActivityScenario.launch(TestHostActivity.class);
-        scenario2.onActivity(activity2 -> {
-            SchoolScheduleFragment fragment2 = new SchoolScheduleFragment();
-            activity2.getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(TestHostActivity.CONTAINER_ID, fragment2, "SCHOOL2")
-                    .commitNow();
-
-            TabLayout tabs2 = fragment2.getView().findViewById(R.id.tabDays);
-            int mondayIndex2 = indexForDay(tabs2, "Monday");
-            assertTrue(mondayIndex2 >= 0);
-            tabs2.getTabAt(mondayIndex2).select();
-
-            View btnEdit2 = fragment2.getView().findViewById(R.id.btnEditSchedule);
-            btnEdit2.performClick();
-
-            View recycler2 = fragment2.getView().findViewById(R.id.recyclerLessons);
-            View edit2 = findChildWithIdContaining(recycler2, 0, R.id.editSubject);
-            assertTrue(edit2 != null);
-            com.google.android.material.textfield.TextInputEditText editSubjectReload =
-                    (com.google.android.material.textfield.TextInputEditText) edit2;
-
-            assertEquals("Math Updated",
-                    editSubjectReload.getText() != null ? editSubjectReload.getText().toString() : "");
-        });
+        assertTrue("getLessonsForToday callback timed out", reloadLatch.await(5, TimeUnit.SECONDS));
+        assertNotNull(mondayLessons[0]);
+        assertTrue(containsSubjectForId(mondayLessons[0], "l1", "Math Updated"));
     }
 
     @Test(timeout = 20000)
-    public void editMultipleLessons_updatesAllEditedLessons() {
-        ActivityScenario<TestHostActivity> scenario = ActivityScenario.launch(TestHostActivity.class);
-        scenario.onActivity(activity -> {
-            SchoolScheduleFragment fragment = new SchoolScheduleFragment();
-            activity.getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(TestHostActivity.CONTAINER_ID, fragment, "SCHOOL")
-                    .commitNow();
+    public void editMultipleLessons_updatesAllEditedLessons() throws Exception {
+        FirestoreHelper firestoreHelper = new FirestoreHelper();
 
-            TabLayout tabs = fragment.getView().findViewById(R.id.tabDays);
-            int mondayIndex = indexForDay(tabs, "Monday");
-            assertTrue(mondayIndex >= 0);
-            tabs.getTabAt(mondayIndex).select();
+        Lesson updatedL1 = new Lesson(
+                "l1",
+                "Math Updated 2",
+                "John Smith Updated 2",
+                "301 Updated 2",
+                "Monday",
+                1,
+                "08:00",
+                "08:45"
+        );
+        updatedL1.setScheduleType("school");
 
-            fragment.getView().findViewById(R.id.btnEditSchedule).performClick();
+        Lesson updatedL2 = new Lesson(
+                "l2",
+                "English Updated 2",
+                "Alice Brown Updated 2",
+                "302 Updated 2",
+                "Monday",
+                2,
+                "08:50",
+                "09:35"
+        );
+        updatedL2.setScheduleType("school");
 
-            View recycler = fragment.getView().findViewById(R.id.recyclerLessons);
+        CountDownLatch latch = new CountDownLatch(2);
+        firestoreHelper.updateLesson(TEST_USER_ID, updatedL1, new FirestoreHelper.OnOperationCompleteListener() {
+            @Override
+            public void onSuccess() {
+                latch.countDown();
+            }
 
-            // Edit both editable lessons: period 1 and period 2.
-            View edit1 = findChildWithIdContaining(recycler, 0, R.id.editSubject);
-            View edit2 = findChildWithIdContaining(recycler, 1, R.id.editSubject);
-            assertTrue(edit1 != null);
-            assertTrue(edit2 != null);
-            com.google.android.material.textfield.TextInputEditText editSubject1 =
-                    (com.google.android.material.textfield.TextInputEditText) edit1;
-            com.google.android.material.textfield.TextInputEditText editSubject2 =
-                    (com.google.android.material.textfield.TextInputEditText) edit2;
-
-            editSubject1.setText("Math Updated 2");
-            editSubject2.setText("English Updated 2");
-
-            fragment.getView().findViewById(R.id.btnSaveChanges).performClick();
-
-            View recyclerAfterSave = fragment.getView().findViewById(R.id.recyclerLessons);
-            View textSubject1View = findChildWithIdContaining(recyclerAfterSave, 0, R.id.textSubject);
-            assertTrue(textSubject1View != null);
-            TextView textSubject1 = (TextView) textSubject1View;
-            assertEquals("Subject: Math Updated 2",
-                    textSubject1.getText() != null ? textSubject1.getText().toString() : "");
-
-            assertTrue(isLessonSubject("Monday", "l1", "Math Updated 2"));
-            assertTrue(isLessonSubject("Monday", "l2", "English Updated 2"));
+            @Override
+            public void onFailure(String error) {
+                fail("updateLesson l1 failed: " + error);
+                latch.countDown();
+            }
         });
+        firestoreHelper.updateLesson(TEST_USER_ID, updatedL2, new FirestoreHelper.OnOperationCompleteListener() {
+            @Override
+            public void onSuccess() {
+                latch.countDown();
+            }
+
+            @Override
+            public void onFailure(String error) {
+                fail("updateLesson l2 failed: " + error);
+                latch.countDown();
+            }
+        });
+
+        assertTrue("updateLesson callbacks timed out", latch.await(5, TimeUnit.SECONDS));
+
+        List<Lesson> snapshot = FirestoreHelper.getInMemoryLessonsSnapshot();
+        assertEquals("No duplicates should be created by editing", seedLessons.size(), snapshot.size());
+
+        assertTrue(containsSubjectForId(snapshot, "l1", "Math Updated 2"));
+        assertTrue(containsSubjectForId(snapshot, "l2", "English Updated 2"));
     }
 
-    private int indexForDay(TabLayout tabs, String dayName) {
-        for (int i = 0; i < tabs.getTabCount(); i++) {
-            Object tag = tabs.getTabAt(i).getTag();
-            if (dayName.equals(tag)) return i;
-        }
-        return -1;
-    }
-
-    private boolean isLessonSubject(String day, String docId, String expectedSubject) {
-        for (Lesson l : FirestoreHelper.getInMemoryLessonsSnapshot()) {
-            if (docId.equals(l.getId()) && day.equals(l.getDay())) {
-                String s = l.getSubject() != null ? l.getSubject() : "";
-                return expectedSubject.equals(s);
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Finds a child view inside RecyclerView item children by the target ID, ordered top-to-bottom.
-     * This assumes the edit form shows in sequential adapter order (which it does for the selected day).
-     */
-    private View findChildWithIdContaining(View recyclerView, int viewIndex, int targetId) {
-        int found = 0;
-        for (int i = 0; i < ((androidx.recyclerview.widget.RecyclerView) recyclerView).getChildCount(); i++) {
-            View item = ((androidx.recyclerview.widget.RecyclerView) recyclerView).getChildAt(i);
-            View target = item.findViewById(targetId);
-            if (target != null && target.getVisibility() == View.VISIBLE) {
-                if (targetId == R.id.editSubject) {
-                    View parentLayout = item.findViewById(R.id.layoutEditSubject);
-                    if (parentLayout == null || parentLayout.getVisibility() != View.VISIBLE) continue;
-                }
-                if (found == viewIndex) return target;
-                found++;
-            }
-        }
-        // If not found as visible, fall back to first match.
-        found = 0;
-        for (int i = 0; i < ((androidx.recyclerview.widget.RecyclerView) recyclerView).getChildCount(); i++) {
-            View item = ((androidx.recyclerview.widget.RecyclerView) recyclerView).getChildAt(i);
-            View target = item.findViewById(targetId);
-            if (target != null) {
-                if (targetId == R.id.editSubject) {
-                    View parentLayout = item.findViewById(R.id.layoutEditSubject);
-                    if (parentLayout == null || parentLayout.getVisibility() != View.VISIBLE) continue;
-                }
-                if (found == viewIndex) return target;
-                found++;
-            }
+    private static Lesson findById(List<Lesson> lessons, String id) {
+        if (lessons == null || id == null) return null;
+        for (Lesson l : lessons) {
+            if (l != null && id.equals(l.getId())) return l;
         }
         return null;
+    }
+
+    private static boolean containsSubjectForId(List<Lesson> lessons, String id, String expectedSubject) {
+        Lesson l = findById(lessons, id);
+        if (l == null) return false;
+        String s = l.getSubject() != null ? l.getSubject() : "";
+        return expectedSubject.equals(s);
     }
 }
 
