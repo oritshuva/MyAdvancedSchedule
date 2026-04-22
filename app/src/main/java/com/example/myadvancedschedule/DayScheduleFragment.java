@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Per-day setup fragment that converts generated time slots into editable
+// lesson rows, enabling structured schedule creation during onboarding.
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +20,8 @@ import java.util.List;
 
 /**
  * Step 2: One fragment per selected day. Shows a RecyclerView of lesson cards.
- * Lesson times are pre-filled from the frame setup; user fills subject, teacher, classroom.
+ * Pre-filling period times keeps user effort focused on academic details
+ * (subject/teacher/classroom) rather than repetitive time entry.
  */
 public class DayScheduleFragment extends Fragment {
 
@@ -30,6 +34,7 @@ public class DayScheduleFragment extends Fragment {
     private List<Lesson> lessons;
 
     public static DayScheduleFragment newInstance(String dayName, ArrayList<TimeSlot> timeSlots) {
+        // Use arguments bundle so Android can recreate this fragment with full state.
         DayScheduleFragment fragment = new DayScheduleFragment();
         Bundle args = new Bundle();
         args.putString(ARG_DAY, dayName);
@@ -40,6 +45,7 @@ public class DayScheduleFragment extends Fragment {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        // Restore immutable day context once; UI layer consumes prepared lesson list.
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             dayName = getArguments().getString(ARG_DAY, "");
@@ -54,6 +60,7 @@ public class DayScheduleFragment extends Fragment {
     }
 
     private void buildLessonsFromSlots() {
+        // Convert each slot into a lesson scaffold so adapter edits mutate final output objects.
         lessons = new ArrayList<>();
         for (int i = 0; i < timeSlots.size(); i++) {
             TimeSlot slot = timeSlots.get(i);
@@ -74,6 +81,7 @@ public class DayScheduleFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Build day-specific editor list; each row corresponds to one generated period.
         View view = inflater.inflate(R.layout.fragment_day_schedule, container, false);
         TextView tvDayName = view.findViewById(R.id.tvDayName);
         tvDayName.setText(dayName);
@@ -87,6 +95,7 @@ public class DayScheduleFragment extends Fragment {
 
     /** Returns the list of lessons for this day (subject/teacher/classroom from user input). */
     public List<Lesson> getLessons() {
+        // Prefer adapter state because it reflects the latest in-row user edits.
         return adapter != null ? adapter.getLessons() : new ArrayList<>(lessons);
     }
 

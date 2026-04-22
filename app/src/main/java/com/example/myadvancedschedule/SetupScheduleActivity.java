@@ -19,6 +19,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import java.util.ArrayList;
 import java.util.List;
 
+// Multi-step setup wizard that collects weekly frame settings, builds per-day lesson forms,
+// computes period time slots, and saves the initial schedule to Firestore.
+
 /**
  * Setup wizard: Step 1 = FrameSetupFragment, Step 2 = ViewPager2 of DayScheduleFragment per day.
  * On save, writes each lesson to Firestore via FirestoreHelper (lessons collection).
@@ -40,6 +43,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize Firebase helpers and boot the setup flow from step 1.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_setup_schedule);
 
@@ -52,6 +56,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        // Bind layout controls and lock pager swiping until day pages are generated.
         viewPager = findViewById(R.id.viewPager);
         btnNext = findViewById(R.id.btnNext);
         btnPrevious = findViewById(R.id.btnPrevious);
@@ -66,6 +71,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void setupStep1() {
+        // Start with the weekly-frame fragment as the first mandatory step.
         fragments.clear();
         fragments.add(new FrameSetupFragment());
         totalSteps = 1;
@@ -74,6 +80,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void setupViewPager() {
+        // Provide fragments to ViewPager and mirror page changes into UI state.
         viewPager.setAdapter(new FragmentStateAdapter(this) {
             @NonNull
             @Override
@@ -97,11 +104,13 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void setupNavigationButtons() {
+        // Wire forward/back navigation for the wizard flow.
         btnNext.setOnClickListener(v -> handleNext());
         btnPrevious.setOnClickListener(v -> handlePrevious());
     }
 
     private void handleNext() {
+        // Validate current step, advance in wizard, or persist all lessons on final step.
         if (currentStep == 0) {
             FrameSetupFragment fragment = (FrameSetupFragment) fragments.get(0);
             frameData = fragment.getFrameSetupData();
@@ -143,6 +152,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void handlePrevious() {
+        // Move one step back while preserving current fragment state.
         if (currentStep > 0) {
             viewPager.setCurrentItem(currentStep - 1, true);
             progressBar.setProgress(currentStep);
@@ -151,6 +161,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void buildDayFragments() {
+        // Rebuild fragment sequence: frame step + one day editor per selected weekday.
         fragments.clear();
         fragments.add(new FrameSetupFragment());
 
@@ -171,6 +182,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
      * e.g. 08:00, 45, 10, 8 -> 08:00-08:45, 08:55-09:40, ...
      */
     static ArrayList<TimeSlot> computeTimeSlots(String startTime, int lessonMin, int breakMin, int maxLessons) {
+        // Convert frame settings into sequential start/end time ranges for each period.
         ArrayList<TimeSlot> result = new ArrayList<>();
         int[] start = parseTime(startTime);
         if (start == null) return result;
@@ -192,16 +204,19 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private static int[] parseTime(String time) {
+        // Parse HH:mm user input into numeric hour/minute pair.
         if (time == null || !time.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")) return null;
         String[] parts = time.split(":");
         return new int[]{Integer.parseInt(parts[0]), Integer.parseInt(parts[1])};
     }
 
     private static String formatTime(int hour, int minute) {
+        // Normalize time output to two-digit HH:mm format.
         return String.format("%02d:%02d", hour % 24, minute % 60);
     }
 
     private void saveScheduleToFirestore() {
+        // Collect all lessons from day fragments and start sequential persistence.
         String userId = auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
         if (userId == null) {
             Toast.makeText(this, "Not logged in", Toast.LENGTH_SHORT).show();
@@ -223,6 +238,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void saveLessonsOneByOne(String userId, List<Lesson> lessons, int index) {
+        // Save lessons in order so each failure is reported immediately and clearly.
         if (index >= lessons.size()) {
             progressBar.setVisibility(View.GONE);
             btnNext.setEnabled(true);
@@ -248,6 +264,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
+        // Refresh wizard labels, progress, and button behavior for the active step.
         progressBar.setProgress(currentStep + 1);
         progressBar.setMax(Math.max(1, totalSteps));
         tvSubtitle.setText(getString(R.string.setup_step_format, currentStep + 1, totalSteps));
@@ -274,6 +291,7 @@ public class SetupScheduleActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
+        // Use wizard back navigation before exiting the setup activity itself.
         if (currentStep > 0) {
             handlePrevious();
         } else {

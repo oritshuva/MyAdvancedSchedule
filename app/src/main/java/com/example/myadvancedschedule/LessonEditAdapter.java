@@ -14,11 +14,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+// Recycler adapter for editable lesson rows in legacy setup/edit flows.
+// TextWatchers keep Lesson models synchronized in real time with user input.
+
 public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.LessonViewHolder> {
     private final Context context;
     private final List<Lesson> lessons;
 
     public LessonEditAdapter(Context context, List<Lesson> lessons) {
+        // Defensive copy prevents external list mutation during edit session.
         this.context = context;
         this.lessons = lessons != null ? new ArrayList<>(lessons) : new ArrayList<>();
     }
@@ -34,6 +38,7 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
     public void onBindViewHolder(@NonNull LessonViewHolder holder, int position) {
         Lesson lesson = lessons.get(position);
         holder.lesson = lesson;
+        // Temporarily detach watchers before setText to avoid recursive updates.
         holder.editSubject.removeTextChangedListener(holder.subjectWatcher);
         holder.editTeacher.removeTextChangedListener(holder.teacherWatcher);
         holder.editClassroom.removeTextChangedListener(holder.classroomWatcher);
@@ -48,6 +53,7 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
     @Override
     public void onViewRecycled(@NonNull LessonViewHolder holder) {
         super.onViewRecycled(holder);
+        // Persist any in-progress typed values before holder is reused for another row.
         if (holder.lesson != null) {
             holder.lesson.setSubject(holder.editSubject.getText() != null ? holder.editSubject.getText().toString().trim() : "");
             holder.lesson.setTeacher(holder.editTeacher.getText() != null ? holder.editTeacher.getText().toString().trim() : "");
@@ -61,6 +67,7 @@ public class LessonEditAdapter extends RecyclerView.Adapter<LessonEditAdapter.Le
     }
 
     public List<Lesson> getLessons() {
+        // Return a copy so callers cannot mutate adapter internals accidentally.
         return new ArrayList<>(lessons);
     }
 

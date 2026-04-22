@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Task add/edit dialog that centralizes task input, due-date selection, and
+// save routing so TasksFragment remains focused on list orchestration.
+
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -16,6 +19,9 @@ import androidx.fragment.app.DialogFragment;
 
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
+
+// Task creation/edit dialog used by TasksFragment.
+// It captures due date/time in structured pickers to keep stored due values consistent.
 
 public class AddTaskDialogFragment extends DialogFragment {
 
@@ -34,10 +40,12 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     public static AddTaskDialogFragment newInstance() {
+        // Add mode entry point.
         return new AddTaskDialogFragment();
     }
 
     public static AddTaskDialogFragment newInstance(Task task) {
+        // Edit mode entry point with existing task payload.
         AddTaskDialogFragment fragment = new AddTaskDialogFragment();
         fragment.taskToEdit = task;
         return fragment;
@@ -50,6 +58,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        // Initialize defaults from current clock so users can save quickly with minimal taps.
         AlertDialog.Builder b = new AlertDialog.Builder(requireActivity());
         View view = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_add_task, null);
         editTaskTitle = view.findViewById(R.id.editTaskTitle);
@@ -85,6 +94,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     private void saveTask() {
+        // Validate title and auth context before attempting Firestore writes.
         String title = editTaskTitle.getText() != null ? editTaskTitle.getText().toString().trim() : "";
         if (title.isEmpty()) {
             editTaskTitle.setError(getString(R.string.task_title_hint));
@@ -98,7 +108,7 @@ public class AddTaskDialogFragment extends DialogFragment {
         }
         boolean isEdit = taskToEdit != null;
         Task task;
-        // Format a human-friendly due time string from the selected date + time.
+        // Persist due datetime in one stable text format so sorting/display stay predictable.
         java.util.Calendar c = java.util.Calendar.getInstance();
         c.set(java.util.Calendar.YEAR, selectedYear);
         c.set(java.util.Calendar.MONTH, selectedMonth);
@@ -118,6 +128,7 @@ public class AddTaskDialogFragment extends DialogFragment {
         }
         FirestoreHelper helper = new FirestoreHelper();
         if (isEdit) {
+            // Edit path keeps the same ID and updates fields in-place.
             helper.updateTask(userId, task, new FirestoreHelper.OnOperationCompleteListener() {
                 @Override
                 public void onSuccess() {
@@ -130,6 +141,7 @@ public class AddTaskDialogFragment extends DialogFragment {
                 }
             });
         } else {
+            // Add path generates deterministic ID in helper and returns task through callback.
             helper.addTask(userId, task, new FirestoreHelper.OnOperationCompleteListener() {
                 @Override
                 public void onSuccess() {
@@ -145,6 +157,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     private void showTimePicker(Button target) {
+        // Use native picker to prevent invalid 24h time strings.
         TimePickerDialog dialog = new TimePickerDialog(
                 requireContext(),
                 (view, hourOfDay, minute) -> {
@@ -160,6 +173,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     private void showDatePicker(Button target) {
+        // Date picker avoids locale-dependent parsing of free text dates.
         DatePickerDialog dialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
@@ -176,6 +190,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     private void updateTimeButtonLabel(Button target) {
+        // Immediate visual feedback helps users confirm chosen time before saving.
         java.util.Calendar c = java.util.Calendar.getInstance();
         c.set(java.util.Calendar.HOUR_OF_DAY, selectedHour);
         c.set(java.util.Calendar.MINUTE, selectedMinute);
@@ -184,6 +199,7 @@ public class AddTaskDialogFragment extends DialogFragment {
     }
 
     private void updateDateButtonLabel(Button target) {
+        // Locale-aware date label improves readability for end users.
         java.util.Calendar c = java.util.Calendar.getInstance();
         c.set(java.util.Calendar.YEAR, selectedYear);
         c.set(java.util.Calendar.MONTH, selectedMonth);

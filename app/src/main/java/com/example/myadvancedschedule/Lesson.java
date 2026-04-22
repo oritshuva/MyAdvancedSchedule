@@ -2,6 +2,9 @@ package com.example.myadvancedschedule;
 
 import java.io.Serializable;
 
+// Core schedule model shared by setup flow, schedule tabs, adapters, and Firestore CRUD.
+// One unified model keeps school and after-school rendering/editing logic interoperable.
+
 public class Lesson implements Serializable {
     private String id;
     private String subject;
@@ -16,6 +19,7 @@ public class Lesson implements Serializable {
 
     // Constructor for new lessons (without ID)
     public Lesson(String subject, String teacher, String classroom, String day, int period, String startTime, String endTime) {
+        // Used before persistence, when Firestore document ID is not yet known.
         this.subject = subject;
         this.teacher = teacher;
         this.classroom = classroom;
@@ -27,6 +31,7 @@ public class Lesson implements Serializable {
 
     // Constructor for existing lessons (with ID)
     public Lesson(String id, String subject, String teacher, String classroom, String day, int period, String startTime, String endTime) {
+        // Used when loading/editing existing entries where identity must be preserved.
         this.id = id;
         this.subject = subject;
         this.teacher = teacher;
@@ -39,9 +44,11 @@ public class Lesson implements Serializable {
 
     // Empty constructor for Firestore
     public Lesson() {
+        // Required by Firestore object mapper.
     }
 
     public String getScheduleType() {
+        // Defaulting to "school" keeps legacy documents compatible with newer dual-schedule UI.
         return scheduleType != null ? scheduleType : "school";
     }
 

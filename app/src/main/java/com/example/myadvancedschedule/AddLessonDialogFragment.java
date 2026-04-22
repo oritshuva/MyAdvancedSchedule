@@ -23,6 +23,9 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.ArrayList;
 import java.util.List;
 
+// Reusable add/edit lesson dialog: loads subject options, validates form input,
+// and writes lesson changes (plus optional new subject) to Firestore.
+
 public class AddLessonDialogFragment extends DialogFragment {
 
     private Spinner spinnerSubject;
@@ -47,10 +50,12 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     public static AddLessonDialogFragment newInstance() {
+        // Create dialog for adding a new lesson.
         return new AddLessonDialogFragment();
     }
 
     public static AddLessonDialogFragment newInstance(Lesson lesson) {
+        // Create dialog preloaded with an existing lesson for edit mode.
         AddLessonDialogFragment fragment = new AddLessonDialogFragment();
         Bundle args = new Bundle();
         args.putSerializable(ARG_LESSON, lesson);
@@ -60,6 +65,7 @@ public class AddLessonDialogFragment extends DialogFragment {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        // Restore edited lesson payload from fragment arguments if provided.
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
             existingLesson = (Lesson) getArguments().getSerializable(ARG_LESSON);
@@ -69,6 +75,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        // Build material dialog and intercept positive button to run custom validation.
         AlertDialog.Builder builder = new AlertDialog.Builder(requireActivity());
         LayoutInflater inflater = requireActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.dialog_add_lesson, null);
@@ -95,6 +102,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void initializeViews(View view) {
+        // Bind all form controls from dialog layout.
         spinnerSubject = view.findViewById(R.id.spinnerSubject);
         layoutSubjectOther = view.findViewById(R.id.layoutSubjectOther);
         editSubjectOther = view.findViewById(R.id.editSubjectOther);
@@ -107,6 +115,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void loadSubjectsAndSetupSpinners() {
+        // Load user-specific subjects first so dropdown reflects previously used values.
         otherLabel = getString(R.string.subject_other);
         String userId = getCurrentUserId();
         if (userId == null) {
@@ -133,6 +142,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void setupSubjectSpinner(List<String> subjects) {
+        // Add "Other" option to support new subjects not present in saved list.
         List<String> options = new ArrayList<>(subjects);
         options.add(otherLabel);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
@@ -151,6 +161,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void setupOtherSpinners() {
+        // Populate day/period/time controls with deterministic selectable ranges.
         // Day: English names
         ArrayAdapter<CharSequence> dayAdapter = ArrayAdapter.createFromResource(
                 requireContext(), R.array.days_array_english, android.R.layout.simple_spinner_item);
@@ -181,6 +192,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void populateFields() {
+        // Pre-fill form values when editing an existing lesson.
         if (existingLesson == null) return;
         editTeacher.setText(existingLesson.getTeacher());
         editClassroom.setText(existingLesson.getClassroom());
@@ -201,10 +213,12 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private boolean isOtherSelected() {
+        // Check whether user selected custom subject input mode.
         return spinnerSubject.getSelectedItem() != null && otherLabel.equals(spinnerSubject.getSelectedItem().toString());
     }
 
     private void setSpinnerToValue(Spinner spinner, String value) {
+        // Select a spinner entry that exactly matches the supplied value.
         if (value == null) return;
         ArrayAdapter<?> adapter = (ArrayAdapter<?>) spinner.getAdapter();
         if (adapter == null) return;
@@ -217,11 +231,13 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private String getCurrentUserId() {
+        // Resolve currently authenticated Firebase user ID.
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         return user != null ? user.getUid() : null;
     }
 
     private String getSelectedSubject() {
+        // Return typed subject when "Other" is selected; otherwise return dropdown value.
         Object sel = spinnerSubject.getSelectedItem();
         if (sel != null && otherLabel.equals(sel.toString())) {
             return editSubjectOther.getText() != null ? editSubjectOther.getText().toString().trim() : "";
@@ -230,6 +246,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private void saveLesson() {
+        // Collect validated inputs and route to subject + lesson persistence flow.
         if (!validateInputs()) return;
 
         String subject = getSelectedSubject();
@@ -266,6 +283,7 @@ public class AddLessonDialogFragment extends DialogFragment {
 
     private void saveLessonToFirestore(String userId, String subject, String teacher, String classroom,
                                        String day, int period, String startTime, String endTime) {
+        // Create/update lesson model and delegate save operation to FirestoreHelper.
         Lesson lesson;
         if (existingLesson != null) {
             lesson = new Lesson(existingLesson.getId(), subject, teacher, classroom, day, period, startTime, endTime);
@@ -297,6 +315,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     private boolean validateInputs() {
+        // Enforce required fields before allowing save.
         String subject = getSelectedSubject();
         if (subject.isEmpty()) {
             Toast.makeText(getContext(), getString(R.string.error_empty_subject), Toast.LENGTH_SHORT).show();
@@ -318,6 +337,7 @@ public class AddLessonDialogFragment extends DialogFragment {
     }
 
     public void setOnLessonSavedListener(OnLessonSavedListener listener) {
+        // Register callback so host screens can refresh after a successful save.
         this.listener = listener;
     }
 }

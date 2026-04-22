@@ -1,12 +1,16 @@
 package com.example.myadvancedschedule;
 
+// Serializable setup payload carrying weekly timing parameters between wizard
+// components so schedule generation remains deterministic and consistent.
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Data collected in Step 1 (FrameSetupFragment).
- * Used to generate time slots and day fragments in Step 2.
+ * Step-1 setup payload used to build the rest of the schedule wizard.
+ * Persisting these decisions in one object lets SetupScheduleActivity generate
+ * all day pages and time slots from a single consistent source of truth.
  */
 public class FrameSetupData implements Serializable {
 
@@ -17,6 +21,7 @@ public class FrameSetupData implements Serializable {
     private int maxLessons;
 
     public FrameSetupData() {
+        // Opinionated defaults reduce initial friction and speed up first-time setup.
         this.selectedDays = new ArrayList<>();
         this.startTime = "08:00";
         this.lessonDurationMinutes = 45;
@@ -26,6 +31,7 @@ public class FrameSetupData implements Serializable {
 
     public FrameSetupData(List<String> selectedDays, String startTime,
                           int lessonDurationMinutes, int breakDurationMinutes, int maxLessons) {
+        // Defensive copying prevents external list mutations from altering wizard state.
         this.selectedDays = selectedDays != null ? new ArrayList<>(selectedDays) : new ArrayList<>();
         this.startTime = startTime != null ? startTime : "08:00";
         this.lessonDurationMinutes = lessonDurationMinutes;

@@ -2,6 +2,9 @@ package com.example.myadvancedschedule;
 
 import java.io.Serializable;
 
+// Generic event model used for after-school reminders and event-related UI flows.
+// Keeping this separate from Lesson allows richer event-specific metadata (notes/reminders).
+
 public class Event implements Serializable {
     private String id;
     private String title;
@@ -16,10 +19,11 @@ public class Event implements Serializable {
     private long timestamp;
 
     public Event() {
-        // Required empty constructor for Firestore
+        // Firestore requires a no-arg constructor for document deserialization.
     }
 
     public Event(String title, String startTime, String endTime, String day, String type) {
+        // New events start as active and get a creation timestamp for ordering/debugging.
         this.title = title;
         this.startTime = startTime;
         this.endTime = endTime;

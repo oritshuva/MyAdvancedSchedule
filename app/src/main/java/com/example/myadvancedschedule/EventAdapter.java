@@ -10,6 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
+// Recycler adapter for event rows in schedule/event lists.
+// It keeps row rendering lightweight so scrolling remains smooth on long lists.
+
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     private Context context;
@@ -21,6 +24,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     public EventAdapter(Context context, List<Event> events, OnEventClickListener listener) {
+        // Adapter is driven externally by list owner, so no internal data fetching occurs here.
         this.context = context;
         this.events = events;
         this.listener = listener;
@@ -40,21 +44,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvTitle.setText(event.getTitle());
         holder.tvTime.setText(event.getStartTime() + " - " + event.getEndTime());
 
-        // Set status indicator
+        // Status icon communicates completion state at a glance without opening details.
         if (event.isPassed()) {
             holder.ivStatus.setImageResource(R.drawable.ic_check_circle);
         } else {
             holder.ivStatus.setImageResource(R.drawable.ic_circle_outline);
         }
 
-        // Show/hide note icon
+        // Note icon appears only when supplemental context exists, reducing visual noise.
         if (event.getNote() != null && !event.getNote().isEmpty()) {
             holder.ivNote.setVisibility(View.VISIBLE);
         } else {
             holder.ivNote.setVisibility(View.GONE);
         }
 
-        // Show/hide reminder icon
+        // Reminder icon indicates that a notification has been configured for this event.
         if (event.getReminderTime() != null && !event.getReminderTime().isEmpty()) {
             holder.ivReminder.setVisibility(View.VISIBLE);
         } else {

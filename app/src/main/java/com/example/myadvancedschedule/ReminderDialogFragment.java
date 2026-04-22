@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Shared reminder dialog used across task/event flows to return one validated
+// reminder payload (timestamp + optional note) with consistent UX behavior.
+
 import android.app.Dialog;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -20,6 +23,7 @@ import java.util.Calendar;
 /**
  * Material-style dialog that lets the user pick a specific date, time,
  * and optional reminder note in a single UI.
+ * This shared dialog keeps reminder UX consistent for both tasks and events.
  */
 public class ReminderDialogFragment extends DialogFragment {
 
@@ -30,10 +34,12 @@ public class ReminderDialogFragment extends DialogFragment {
     private OnReminderConfirmedListener listener;
 
     public static ReminderDialogFragment newInstance() {
+        // Factory method aligns usage with other dialog fragments in the project.
         return new ReminderDialogFragment();
     }
 
     public void setOnReminderConfirmedListener(OnReminderConfirmedListener listener) {
+        // Host provides callback to receive validated reminder payload.
         this.listener = listener;
     }
 
@@ -64,6 +70,7 @@ public class ReminderDialogFragment extends DialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
         builder.setView(view)
                 .setPositiveButton(R.string.reminder_save, (dialog, which) -> {
+                    // Re-check context/listener at click time because fragment state may change.
                     Context safeContext = getContext();
                     if (safeContext == null) safeContext = getActivity();
                     if (listener == null || safeContext == null) return;
@@ -90,6 +97,7 @@ public class ReminderDialogFragment extends DialogFragment {
 
                         long triggerAt = selected.getTimeInMillis();
                         if (triggerAt <= System.currentTimeMillis()) {
+                            // Reject past reminders to avoid immediate/incorrect alarm firing.
                             android.widget.Toast.makeText(safeContext, R.string.reminder_time_in_past,
                                     android.widget.Toast.LENGTH_SHORT).show();
                             return;
@@ -101,6 +109,7 @@ public class ReminderDialogFragment extends DialogFragment {
                         }
                         listener.onReminderConfirmed(triggerAt, note);
                     } catch (Exception e) {
+                        // Any parsing/runtime issue should fail gracefully instead of crashing the host screen.
                         android.content.Context toastContext = getContext();
                         if (toastContext == null) toastContext = getActivity();
                         if (toastContext != null) {

@@ -11,6 +11,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
 
+// Alternative sign-up screen that enforces live validation before submission.
+// This reduces failed auth attempts and guides users toward valid input early.
+
 public class SignupActivity extends AppCompatActivity {
 
     private TextInputEditText etName, etEmail, etPassword;
@@ -19,6 +22,7 @@ public class SignupActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Attach a shared validation watcher so submit state reflects form validity in real time.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
@@ -54,6 +58,7 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private void validateInputs() {
+        // Gate submit button on all core constraints to improve first-attempt success rate.
         String name = etName.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
@@ -67,6 +72,7 @@ public class SignupActivity extends AppCompatActivity {
     }
 
     private void signupUser() {
+        // Create auth account first, then persist profile data in users collection.
         String name = etName.getText().toString().trim();
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
@@ -76,7 +82,7 @@ public class SignupActivity extends AppCompatActivity {
         auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // Save user data to Firestore
+                        // Persist profile immediately so downstream screens can rely on user document.
                         String userId = auth.getCurrentUser().getUid();
                         User user = new User(name, email);
                         user.setId(userId);

@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Auth entry screen: validates login inputs, signs in with Firebase Auth,
+// and routes users either to setup or the main dashboard based on lesson data.
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
@@ -24,6 +27,7 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Bind UI controls and configure login/registration actions.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
@@ -56,6 +60,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
+        // Validate credentials, execute Firebase sign-in, then route by user data readiness.
         String email = editEmail.getText().toString().trim();
         String password = editPassword.getText().toString().trim();
 
@@ -79,6 +84,7 @@ public class LoginActivity extends AppCompatActivity {
         // התחברות ל-Firebase
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
+                    // Re-enable the form after the asynchronous authentication response arrives.
                     progressBar.setVisibility(View.GONE);
                     btnLogin.setEnabled(true);
 
@@ -94,9 +100,11 @@ public class LoginActivity extends AppCompatActivity {
                                 Class<?> target = (lessons != null && !lessons.isEmpty())
                                         ? MainActivity.class
                                         : SetupScheduleActivity.class;
+                                // Route directly to the app only when the account already has schedule data.
                                 Intent intent = new Intent(LoginActivity.this, target);
                                 startActivity(intent);
                                 finish();
+                                // Remove login from back stack so Back does not return to this screen.
                             }
 
                             @Override

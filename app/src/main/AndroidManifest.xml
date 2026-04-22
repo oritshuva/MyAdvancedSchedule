@@ -2,7 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Needed for exact alarms on Android 12+ -->
+    <!-- Required for exact reminder delivery on Android 12+; without this permission,
+         AlarmManager may downgrade reminders to inexact timing. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
@@ -16,7 +17,8 @@
         android:theme="@style/Theme.MyAdvancedSchedule"
         tools:targetApi="31">
 
-        <!-- Welcome is the launcher; if user is authenticated, open MainActivity -->
+        <!-- Launcher keeps entry flow centralized: WelcomeActivity can decide whether
+             to show auth options or forward authenticated users directly to main tabs. -->
         <activity
             android:name=".WelcomeActivity"
             android:exported="true">
@@ -34,17 +36,17 @@
             android:name=".RegisterActivity"
             android:exported="false" />
 
-        <!-- Setup wizard: runs after Login/Register -->
+        <!-- Setup wizard runs after registration/login when schedule baseline is missing. -->
         <activity
             android:name=".SetupScheduleActivity"
             android:exported="false" />
 
-        <!-- 🔥 MainActivity רק למשתמשים מחוברים -->
+        <!-- Main screen remains non-exported to prevent external deep links from bypassing auth flow. -->
         <activity
             android:name=".MainActivity"
             android:exported="false" />
 
-        <!-- Receives scheduled reminder alarms and shows notifications -->
+        <!-- Receiver is private to this app so only internally scheduled alarms can trigger it. -->
         <receiver
             android:name=".ReminderReceiver"
             android:exported="false" />

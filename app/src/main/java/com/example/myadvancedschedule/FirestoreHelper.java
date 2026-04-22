@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// Central Firestore data gateway: handles CRUD for lessons/tasks/subjects,
+// applies user scoping, and exposes callback-based APIs used by activities/fragments.
+
 public class FirestoreHelper {
 
     private FirebaseFirestore db;
@@ -29,6 +32,7 @@ public class FirestoreHelper {
 
     /** Enable in-memory lessons for instrumentation tests. */
     public static void setInMemoryLessonsForTests(String userId, List<Lesson> lessons) {
+        // Populate an isolated in-memory lesson map so tests do not hit real Firebase.
         synchronized (TEST_LOCK) {
             testUserIdOverride = userId;
             Map<String, Lesson> map = new HashMap<>();
@@ -44,6 +48,7 @@ public class FirestoreHelper {
 
     /** Disable in-memory test mode. */
     public static void clearInMemoryLessonsForTests() {
+        // Clear all test overrides and restore normal Firestore-backed behavior.
         synchronized (TEST_LOCK) {
             testUserIdOverride = null;
             testLessonsByDocId = null;
@@ -52,6 +57,7 @@ public class FirestoreHelper {
 
     /** Snapshot of in-memory lessons (for assertions). */
     public static List<Lesson> getInMemoryLessonsSnapshot() {
+        // Return deep copies to prevent tests from mutating helper internals.
         synchronized (TEST_LOCK) {
             if (testLessonsByDocId == null) return new ArrayList<>();
             List<Lesson> out = new ArrayList<>();
@@ -63,12 +69,14 @@ public class FirestoreHelper {
     }
 
     public FirestoreHelper() {
+        // Acquire shared Firebase instances once per helper object.
         db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
     }
 
     // קבלת UID של המשתמש המחובר
     private String getUserId() {
+        // Prefer injected test user ID; otherwise use authenticated Firebase user.
         String override = testUserIdOverride;
         if (override != null && !override.trim().isEmpty()) return override;
         FirebaseUser currentUser = mAuth.getCurrentUser();
@@ -77,10 +85,12 @@ public class FirestoreHelper {
 
     /** Public wrapper for production + test code. */
     public String getCurrentUserId() {
+        // Expose user-id lookup to UI/controller classes.
         return getUserId();
     }
 
     private static Lesson cloneLesson(Lesson original) {
+        // Copy lesson fields used by persistence and UI sorting logic.
         Lesson copy = new Lesson(
                 original.getId(),
                 original.getSubject(),
@@ -109,6 +119,7 @@ public class FirestoreHelper {
 
     // 🔥 הוספת שיעור חדש (תוקן)
     public void addLesson(String userId, Lesson lesson, OnOperationCompleteListener listener) {
+        // Save lesson with deterministic document ID to avoid exact duplicates.
         if (userId == null) {
             listener.onFailure("User not logged in");
             return;
@@ -146,6 +157,7 @@ public class FirestoreHelper {
 
     // 🔥 עדכון שיעור קיים (תוקן)
     public void updateLesson(String userId, Lesson lesson, OnOperationCompleteListener listener) {
+        // Update lesson in test map or Firestore depending on runtime mode.
         if (userId == null) {
             listener.onFailure("User not logged in");
             return;
@@ -196,6 +208,7 @@ public class FirestoreHelper {
 
     // מחיקת שיעור
     public void deleteLesson(String lessonId, OnOperationCompleteListener listener) {
+        // Permanently remove a lesson document by its document ID.
         db.collection(COLLECTION_LESSONS)
                 .document(lessonId)
                 .delete()
@@ -205,6 +218,7 @@ public class FirestoreHelper {
 
     // 🔥 קבלת כל השיעורים של המשתמש (תוקן)
     public void getAllLessons(OnLessonsLoadedListener listener) {
+        // Load all lessons scoped to the current user account.
         String userId = getUserId();
         if (userId == null) {
             listener.onError("User not logged in");
@@ -262,6 +276,7 @@ public class FirestoreHelper {
 
     /** Load lessons for a specific day filtered by scheduleType ("school" or "after_school"). */
     public void getLessonsForToday(String scheduleType, String todayDayName, OnLessonsLoadedListener listener) {
+        // Filter user lessons by schedule section and selected day, then apply stable ordering.
         getAllLessons(new OnLessonsLoadedListener() {
             @Override
             public void onLessonsLoaded(List<Lesson> lessons) {
@@ -297,6 +312,7 @@ public class FirestoreHelper {
     }
 
     public void addTask(String userId, Task task, OnOperationCompleteListener listener) {
+        // Save task using deterministic ID (title + due time) to prevent duplicates.
         if (userId == null) {
             listener.onFailure("User not logged in");
             return;
@@ -329,6 +345,7 @@ public class FirestoreHelper {
     }
 
     public void getTasks(OnTasksLoadedListener listener) {
+        // Load active (not completed) tasks for the current user.
         String userId = getUserId();
         if (userId == null) {
             listener.onError("User not logged in");
@@ -372,6 +389,7 @@ public class FirestoreHelper {
     }
 
     public void updateTask(String userId, Task task, OnOperationCompleteListener listener) {
+        // Replace task data while keeping reminder fields consistent with current state.
         if (userId == null) {
             listener.onFailure("User not logged in");
             return;
@@ -399,6 +417,7 @@ public class FirestoreHelper {
     }
 
     public void deleteTask(String taskId, OnOperationCompleteListener listener) {
+        // Delete a task document by ID.
         db.collection(COLLECTION_TASKS)
                 .document(taskId)
                 .delete()
@@ -414,6 +433,7 @@ public class FirestoreHelper {
 
     /** Load subject names for the current user (subjects collection + unique from lessons). */
     public void getSubjects(OnSubjectsLoadedListener listener) {
+        // Build dropdown subject list from dedicated collection and lesson history.
         String userId = getUserId();
         if (userId == null) {
             listener.onError("User not logged in");
@@ -449,6 +469,7 @@ public class FirestoreHelper {
 
     /** Add a new subject so it appears in the dropdown next time. */
     public void addSubject(String userId, String subjectName, OnOperationCompleteListener listener) {
+        // Store a subject name so it becomes reusable in lesson creation dialogs.
         if (userId == null) {
             listener.onFailure("User not logged in");
             return;

@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// First setup-wizard step where users define weekly schedule constraints that
+// drive all subsequent day pages and generated lesson time slots.
+
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -19,7 +22,8 @@ import java.util.regex.Pattern;
 
 /**
  * Step 1 of the setup wizard: weekly frame setup.
- * User selects study days, start time, lesson duration, break duration, and max lessons.
+ * This step captures schedule constraints once so all generated day pages use
+ * consistent timing rules and period counts.
  */
 public class FrameSetupFragment extends Fragment {
 
@@ -33,12 +37,14 @@ public class FrameSetupFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Inflate form-only fragment; actual persistence is handled by SetupScheduleActivity.
         View view = inflater.inflate(R.layout.fragment_frame_setup, container, false);
         bindViews(view);
         return view;
     }
 
     private void bindViews(View view) {
+        // Keep view binding isolated for readability and easier maintenance.
         checkSunday = view.findViewById(R.id.checkSunday);
         checkMonday = view.findViewById(R.id.checkMonday);
         checkTuesday = view.findViewById(R.id.checkTuesday);
@@ -58,6 +64,7 @@ public class FrameSetupFragment extends Fragment {
      */
     @Nullable
     public FrameSetupData getFrameSetupData() {
+        // Return null on invalid input so parent activity can block progression safely.
         List<String> selectedDays = getSelectedDays();
         if (selectedDays.isEmpty()) {
             return null;
@@ -81,6 +88,7 @@ public class FrameSetupFragment extends Fragment {
     }
 
     private List<String> getSelectedDays() {
+        // Preserve weekday order so generated tabs follow a predictable left-to-right flow.
         List<String> days = new ArrayList<>();
         if (checkSunday.isChecked()) days.add("Sunday");
         if (checkMonday.isChecked()) days.add("Monday");
@@ -93,11 +101,13 @@ public class FrameSetupFragment extends Fragment {
     }
 
     private static boolean isValidTime(String time) {
+        // Strict HH:mm validation prevents slot-generation math errors later in setup.
         if (TextUtils.isEmpty(time)) return false;
         return TIME_PATTERN.matcher(time).matches();
     }
 
     private int parseInt(TextInputEditText edit, int min, int max, String fieldName) {
+        // Clamp numeric setup fields to practical bounds to avoid unusable schedules.
         String s = edit.getText() != null ? edit.getText().toString().trim() : "";
         if (TextUtils.isEmpty(s)) {
             edit.setError(getString(R.string.setup_error_invalid_number));

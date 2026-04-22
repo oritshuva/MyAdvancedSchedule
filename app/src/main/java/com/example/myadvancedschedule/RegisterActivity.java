@@ -18,6 +18,9 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
+// Account registration screen used in the primary onboarding flow.
+// It validates user input client-side to reduce avoidable Firebase round-trips.
+
 public class RegisterActivity extends AppCompatActivity {
 
     private TextInputEditText editName, editEmail, editPassword, editConfirmPassword;
@@ -28,6 +31,7 @@ public class RegisterActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Initialize auth and wire form controls before user interaction begins.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
@@ -63,6 +67,7 @@ public class RegisterActivity extends AppCompatActivity {
     }
 
     private void registerUser() {
+        // Validate locally first so users get immediate feedback without network delay.
         String name = editName != null && editName.getText() != null ?
                 editName.getText().toString().trim() : "";
         String email = editEmail != null && editEmail.getText() != null ?
@@ -126,6 +131,7 @@ public class RegisterActivity extends AppCompatActivity {
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
+                        // Re-enable form regardless of result to keep UI recoverable.
                         if (progressBar != null) {
                             progressBar.setVisibility(View.GONE);
                         }
@@ -134,6 +140,7 @@ public class RegisterActivity extends AppCompatActivity {
                         }
 
                         if (task.isSuccessful()) {
+                            // New users proceed directly to schedule setup so app has usable data.
                             Toast.makeText(RegisterActivity.this,
                                     getString(R.string.register_success),
                                     Toast.LENGTH_SHORT).show();

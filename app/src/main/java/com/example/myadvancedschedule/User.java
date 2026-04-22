@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Firestore user profile model used for account metadata beyond auth credentials.
+// This keeps app-specific identity fields separate from FirebaseAuth core user state.
+
 public class User {
     private String id;
     private String name;
@@ -7,10 +10,11 @@ public class User {
     private long createdAt;
 
     public User() {
-        // Required empty constructor for Firestore
+        // Firestore object mapper requires a public no-arg constructor.
     }
 
     public User(String name, String email) {
+        // Capture creation timestamp once so profile ordering/auditing is stable.
         this.name = name;
         this.email = email;
         this.createdAt = System.currentTimeMillis();

@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Task-specific reminder picker dialog that captures date/time/detail together
+// before scheduling, reducing reminder configuration friction for users.
+
 import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.TimePickerDialog;
@@ -27,6 +30,8 @@ import java.util.Locale;
  * - Date picker (calendar dialog)
  * - Detail text field
  * - Explicit Save button at the bottom.
+ * Keeping this as a dedicated task dialog allows task-specific UX without
+ * affecting the generic reminder dialog used elsewhere.
  */
 public class TaskReminderDialogFragment extends DialogFragment {
 
@@ -43,6 +48,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     private int selectedMinute;
 
     public static TaskReminderDialogFragment newInstance() {
+        // Factory constructor for consistent fragment recreation patterns.
         return new TaskReminderDialogFragment();
     }
 
@@ -53,6 +59,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        // Manual save button inside layout allows richer validation flow before dismissal.
         View view = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_task_reminder, null, false);
 
@@ -80,6 +87,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
 
         buttonSave.setOnClickListener(v -> {
             if (listener == null || getContext() == null) {
+                // Nothing to return to; close safely.
                 dialog.dismiss();
                 return;
             }
@@ -95,6 +103,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
 
                 long triggerAt = selected.getTimeInMillis();
                 if (triggerAt <= System.currentTimeMillis()) {
+                    // Enforce future reminders so users do not receive immediate stale notifications.
                     Toast.makeText(
                             getContext(),
                             R.string.reminder_time_in_past,
@@ -123,6 +132,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     }
 
     private void showTimePicker(Button buttonTime) {
+        // Native picker prevents invalid time format input.
         TimePickerDialog dialog = new TimePickerDialog(
                 requireContext(),
                 (view, hourOfDay, minute) -> {
@@ -138,6 +148,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     }
 
     private void showDatePicker(Button buttonDate) {
+        // Date picker keeps reminder date selection explicit and locale-safe.
         DatePickerDialog dialog = new DatePickerDialog(
                 requireContext(),
                 (view, year, month, dayOfMonth) -> {
@@ -154,6 +165,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     }
 
     private void updateTimeButtonLabel(Button buttonTime) {
+        // Reflect selected value immediately for confirmation before save.
         Calendar c = Calendar.getInstance();
         c.set(Calendar.HOUR_OF_DAY, selectedHour);
         c.set(Calendar.MINUTE, selectedMinute);
@@ -162,6 +174,7 @@ public class TaskReminderDialogFragment extends DialogFragment {
     }
 
     private void updateDateButtonLabel(Button buttonDate) {
+        // Use localized date formatting for readability.
         Calendar c = Calendar.getInstance();
         c.set(Calendar.YEAR, selectedYear);
         c.set(Calendar.MONTH, selectedMonth);

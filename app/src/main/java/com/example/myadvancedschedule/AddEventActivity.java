@@ -9,6 +9,10 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.textfield.TextInputEditText;
 
+// Event editor screen for creating or updating after-school events.
+// It keeps form entry, persistence, and reminder scheduling in one flow so users
+// can finish event setup without navigating across multiple screens.
+
 public class AddEventActivity extends AppCompatActivity {
 
     private TextInputEditText etEventTitle, etStartTime, etEndTime, etNote, etReminder;
@@ -21,6 +25,7 @@ public class AddEventActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // Read mode flags from intent so one activity supports both add and edit UX.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_event);
 
@@ -40,6 +45,7 @@ public class AddEventActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        // Bind form controls and attach time/reminder pickers for structured input.
         etEventTitle = findViewById(R.id.etEventTitle);
         etStartTime = findViewById(R.id.etStartTime);
         etEndTime = findViewById(R.id.etEndTime);
@@ -76,6 +82,7 @@ public class AddEventActivity extends AppCompatActivity {
         etReminder.setOnClickListener(v -> {
             ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
             dialog.setOnReminderConfirmedListener((triggerAtMillis, noteText) -> {
+                // Keep selected timestamp in memory for alarm scheduling after persistence.
                 reminderTriggerAtMillis = triggerAtMillis;
                 // Show chosen date/time in the reminder field for user feedback.
                 java.text.DateFormat df =
@@ -89,6 +96,7 @@ public class AddEventActivity extends AppCompatActivity {
     }
 
     private void setupButtons() {
+        // Centralized button wiring keeps entry points for save/delete/cancel predictable.
         btnSave.setOnClickListener(v -> saveEvent());
         btnDelete.setOnClickListener(v -> deleteEvent());
         btnCancel.setOnClickListener(v -> finish());
@@ -98,6 +106,7 @@ public class AddEventActivity extends AppCompatActivity {
     // by the unified ReminderDialogFragment used across the app.
 
     private void loadEventData() {
+        // Prefill form when editing to minimize user re-entry and reduce mistakes.
         if (currentEvent != null) {
             etEventTitle.setText(currentEvent.getTitle());
             etStartTime.setText(currentEvent.getStartTime());
@@ -112,6 +121,7 @@ public class AddEventActivity extends AppCompatActivity {
     }
 
     private void saveEvent() {
+        // Validate required fields early to avoid incomplete documents in Firestore.
         String title = etEventTitle.getText().toString().trim();
         String startTime = etStartTime.getText().toString().trim();
         String endTime = etEndTime.getText().toString().trim();
@@ -125,6 +135,7 @@ public class AddEventActivity extends AppCompatActivity {
 
         Event event;
         if (isEditMode) {
+            // Preserve original event identity and update only mutable fields.
             event = currentEvent;
             event.setTitle(title);
             event.setStartTime(startTime);
@@ -138,11 +149,14 @@ public class AddEventActivity extends AppCompatActivity {
         event.setReminderTime(reminder);
 
         if (isEditMode) {
+            // Use set() for edit path to keep document ID stable across updates.
             FirebaseHelper.getInstance().getEventsCollection()
                     .document(event.getId())
                     .set(event)
                     .addOnSuccessListener(aVoid -> {
                         if (reminderTriggerAtMillis > 0) {
+                            // Schedule reminder only after Firestore write succeeds,
+                            // so notifications never reference unsaved event state.
                             ReminderUtils.scheduleEventReminder(this, event, reminderTriggerAtMillis, event.getNote());
                         }
                         Toast.makeText(this, "האירוע עודכן בהצלחה", Toast.LENGTH_SHORT).show();
@@ -152,6 +166,7 @@ public class AddEventActivity extends AppCompatActivity {
                         Toast.makeText(this, "שגיאה בעדכון האירוע", Toast.LENGTH_SHORT).show();
                     });
         } else {
+            // Add path creates a new Firestore document, then stores returned ID in model.
             FirebaseHelper.getInstance().getEventsCollection()
                     .add(event)
                     .addOnSuccessListener(documentReference -> {
@@ -169,6 +184,7 @@ public class AddEventActivity extends AppCompatActivity {
     }
 
     private void deleteEvent() {
+        // Destructive action uses confirmation dialog to prevent accidental data loss.
         new AlertDialog.Builder(this)
                 .setTitle("מחיקת אירוע")
                 .setMessage("האם אתה בטוח שברצונך למחוק אירוע זה?")

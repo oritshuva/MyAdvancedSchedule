@@ -13,6 +13,9 @@ import androidx.fragment.app.Fragment;
 import java.util.HashMap;
 import java.util.Map;
 
+// Fragment for selecting per-day lesson counts in legacy setup flow.
+// NumberPicker bounds enforce practical limits and prevent invalid schedule sizes.
+
 public class SelectLessonsCountFragment extends Fragment {
 
     private NumberPicker npSunday, npMonday, npTuesday, npWednesday, npThursday;
@@ -20,6 +23,7 @@ public class SelectLessonsCountFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        // Inflate count-selection UI and initialize all weekday pickers.
         View view = inflater.inflate(R.layout.fragment_select_lessons_count, container, false);
 
         initNumberPickers(view);
@@ -27,6 +31,7 @@ public class SelectLessonsCountFragment extends Fragment {
     }
 
     private void initNumberPickers(View view) {
+        // Shared picker configuration keeps UX consistent across weekdays.
         npSunday = view.findViewById(R.id.npSunday);
         npMonday = view.findViewById(R.id.npMonday);
         npTuesday = view.findViewById(R.id.npTuesday);
@@ -44,6 +49,7 @@ public class SelectLessonsCountFragment extends Fragment {
     }
 
     public Map<String, Integer> getLessonCounts() {
+        // Return explicit day-to-count mapping for downstream schedule generation logic.
         Map<String, Integer> counts = new HashMap<>();
         counts.put("Sunday", npSunday.getValue());
         counts.put("Monday", npMonday.getValue());

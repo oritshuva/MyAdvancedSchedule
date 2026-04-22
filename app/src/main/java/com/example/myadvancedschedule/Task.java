@@ -1,8 +1,15 @@
 package com.example.myadvancedschedule;
 
+// Task entity model for UI + Firestore, including optional reminder metadata
+// so scheduled notifications can be reconstructed from persisted state.
+
 import java.io.Serializable;
 
-/** Task for the Tasks screen. Stored in Firestore. */
+/**
+ * Task domain model used by the Tasks tab and Firestore persistence layer.
+ * It intentionally includes optional reminder metadata so scheduling decisions
+ * can survive app restarts and be reconstructed from backend state.
+ */
 public class Task implements Serializable {
     private String id;
     private String title;
@@ -13,15 +20,18 @@ public class Task implements Serializable {
     private String reminderDetail;
 
     public Task() {
+        // Required for Firebase/serialization frameworks.
     }
 
     public Task(String title, String dueTime, boolean completed) {
+        // Constructor used when creating new local tasks before Firestore assigns ID.
         this.title = title;
         this.dueTime = dueTime;
         this.completed = completed;
     }
 
     public Task(String id, String title, String dueTime, boolean completed) {
+        // Constructor used when hydrating existing tasks loaded from Firestore.
         this.id = id;
         this.title = title;
         this.dueTime = dueTime;

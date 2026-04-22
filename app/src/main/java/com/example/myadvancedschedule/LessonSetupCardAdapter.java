@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Setup-day lesson editor adapter that keeps each row bound to a Lesson model
+// so wizard screens can collect complete day data without extra parsing steps.
+
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -18,13 +21,14 @@ import java.util.List;
 /**
  * Adapter for the RecyclerView in DayScheduleFragment.
  * Each item is a lesson card with time slot and subject/teacher/classroom fields.
- * Lesson times are pre-set; user fills subject, teacher, classroom.
+ * Lesson times are pre-generated from frame setup so users focus only on academic details.
  */
 public class LessonSetupCardAdapter extends RecyclerView.Adapter<LessonSetupCardAdapter.CardViewHolder> {
 
     private final List<Lesson> lessons;
 
     public LessonSetupCardAdapter(List<Lesson> lessons) {
+        // Work on a local copy so fragment state changes stay controlled.
         this.lessons = lessons != null ? new ArrayList<>(lessons) : new ArrayList<>();
     }
 
@@ -38,6 +42,7 @@ public class LessonSetupCardAdapter extends RecyclerView.Adapter<LessonSetupCard
 
     @Override
     public void onBindViewHolder(@NonNull CardViewHolder holder, int position) {
+        // Bind row to a specific lesson model; TextWatchers update this model directly.
         Lesson lesson = lessons.get(position);
         holder.setLesson(lesson);
         holder.textTimeSlot.setText(lesson.getStartTime() + " - " + lesson.getEndTime());
@@ -52,6 +57,7 @@ public class LessonSetupCardAdapter extends RecyclerView.Adapter<LessonSetupCard
     }
 
     public List<Lesson> getLessons() {
+        // Return copy for safe downstream processing in setup activity.
         return new ArrayList<>(lessons);
     }
 
@@ -97,6 +103,7 @@ public class LessonSetupCardAdapter extends RecyclerView.Adapter<LessonSetupCard
             editSubject = itemView.findViewById(R.id.editSubject);
             editTeacher = itemView.findViewById(R.id.editTeacher);
             editClassroom = itemView.findViewById(R.id.editClassroom);
+            // Watchers keep model synchronized continuously so no explicit "collect form" pass is needed.
             editSubject.addTextChangedListener(subjectWatcher);
             editTeacher.addTextChangedListener(teacherWatcher);
             editClassroom.addTextChangedListener(classroomWatcher);

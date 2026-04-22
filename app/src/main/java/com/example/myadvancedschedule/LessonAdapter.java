@@ -8,6 +8,9 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
+// Basic lesson list adapter used where a compact textual representation is enough.
+// Click and long-click callbacks let host screens choose between view/edit actions.
+
 public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonViewHolder> {
     private List<Lesson> lessons;
     private OnItemClickListener listener;
@@ -18,6 +21,7 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonView
     }
 
     public LessonAdapter(List<Lesson> lessons) {
+        // Data is managed by host; adapter only renders and forwards interactions.
         this.lessons = lessons;
     }
 
@@ -35,6 +39,7 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonView
 
     @Override
     public void onBindViewHolder(@NonNull LessonViewHolder holder, int position) {
+        // Binding is delegated to holder to keep adapter logic minimal.
         Lesson lesson = lessons.get(position);
         holder.bind(lesson, listener);
     }
@@ -61,6 +66,7 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonView
         }
 
         public void bind(Lesson lesson, OnItemClickListener listener) {
+            // Render key lesson fields directly for quick list scanning.
             subjectTextView.setText(lesson.getSubject());
             teacherTextView.setText(lesson.getTeacher());
             classroomTextView.setText(lesson.getClassroom());
