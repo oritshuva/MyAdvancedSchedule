@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// After-school tab: shows non-class events by weekday, supports event actions
+// (delete/share/reminder/done), and keeps the schedule list synchronized with Firestore.
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -41,6 +44,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Inflate shared schedule layout and configure adapters, tabs, and action handlers.
         View view = inflater.inflate(R.layout.fragment_schedule, container, false);
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
         emptyView = view.findViewById(R.id.emptyView);
@@ -56,6 +60,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
         adapter.setAfterSchoolEventActionListener(new LessonCardAdapter.OnAfterSchoolEventActionListener() {
             @Override
             public void onDelete(Lesson lesson) {
+                // Remove the event from Firestore, then refresh the selected day list.
                 firestoreHelper.deleteLesson(lesson.getId(), new FirestoreHelper.OnOperationCompleteListener() {
                     @Override
                     public void onSuccess() {
@@ -75,6 +80,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
             @Override
             public void onShare(Lesson lesson) {
+                // Build a compact plain-text summary for Android's system share sheet.
                 String title = lesson.getSubject() != null ? lesson.getSubject() : getString(R.string.after_school_title);
                 String time = "";
                 if (lesson.getStartTime() != null || lesson.getEndTime() != null) {
@@ -100,6 +106,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
             @Override
             public void onReminder(Lesson lesson) {
+                // Collect reminder details and schedule a local notification for this event.
                 if (!isAdded()) return;
                 ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
@@ -120,6 +127,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
             @Override
             public void onDoneChanged(Lesson lesson, boolean done) {
+                // Completed after-school events are treated as finished and removed.
                 if (!done) {
                     return;
                 }
@@ -165,6 +173,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
             intent.setType("text/plain");
             intent.putExtra(android.content.Intent.EXTRA_TEXT, shareText.toString());
             startActivity(android.content.Intent.createChooser(intent, null));
+            // Let the user choose the target app (for example messaging or email).
         });
         recyclerLessons.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerLessons.setAdapter(adapter);
@@ -174,11 +183,13 @@ public class AfterSchoolScheduleFragment extends Fragment {
 
     @Override
     public void onResume() {
+        // Refresh data whenever this tab becomes visible again.
         super.onResume();
         loadLessonsForCurrentDay();
     }
 
     private void setupDayTabsAndHeader() {
+        // Create weekday tabs, select today's tab, and prepare header/FAB for this section.
         if (tabDays != null) {
             tabDays.removeAllTabs();
             String[] days = getResources().getStringArray(R.array.days_array_english);
@@ -225,6 +236,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
     }
 
     private void configureHeaderForDay(String dayName) {
+        // Keep header title and date aligned with the currently selected weekday.
         String day = dayName != null ? dayName : ScheduleFragmentHelper.getTodayDayName();
         if (textDayTitle != null) {
             String title = getString(R.string.today_after_school_title, day);
@@ -242,6 +254,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
     }
 
     private void configureFab() {
+        // Open event-creation dialog and refresh list after a successful save.
         if (fabAddEvent != null) {
             fabAddEvent.setVisibility(View.VISIBLE);
             fabAddEvent.setOnClickListener(v -> {
@@ -254,6 +267,7 @@ public class AfterSchoolScheduleFragment extends Fragment {
     }
 
     private void loadLessonsForCurrentDay() {
+        // Load after-school events for the active day and swap between list/empty states.
         String day = currentDayName != null ? currentDayName : ScheduleFragmentHelper.getTodayDayName();
         progressBar.setVisibility(View.VISIBLE);
         recyclerLessons.setVisibility(View.GONE);

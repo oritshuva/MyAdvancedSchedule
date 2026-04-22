@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Tasks list adapter that renders task rows and forwards all actions to the
+// fragment layer, where persistence and business rules are enforced.
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +17,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.List;
 
+// Recycler adapter for task rows in the Tasks tab.
+// It delegates mutations to fragment callbacks so Firestore remains the source of truth.
+
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private final List<Task> tasks = new ArrayList<>();
@@ -27,22 +33,26 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public void setOnTaskActionListener(OnTaskActionListener listener) {
+        // Host fragment receives all user actions and decides persistence behavior.
         this.listener = listener;
     }
 
     public void setTasks(List<Task> newTasks) {
+        // Full refresh is acceptable here because task list size is typically small.
         tasks.clear();
         if (newTasks != null) tasks.addAll(newTasks);
         notifyDataSetChanged();
     }
 
     public void addTask(Task task) {
+        // Optimized insert animation for immediate feedback after successful add.
         if (task == null) return;
         tasks.add(task);
         notifyItemInserted(tasks.size() - 1);
     }
 
     public void removeTask(Task task) {
+        // Remove by object identity used in current list state.
         if (task == null) return;
         int index = tasks.indexOf(task);
         if (index >= 0) {
@@ -52,6 +62,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     }
 
     public void updateTask(Task task) {
+        // Update in place to preserve list position and reduce UI churn.
         if (task == null) return;
         int index = tasks.indexOf(task);
         if (index >= 0) {
@@ -75,6 +86,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         holder.checkCompleted.setChecked(task.isCompleted());
         holder.textTaskTitle.setAlpha(task.isCompleted() ? 0.6f : 1f);
         holder.checkCompleted.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // UI updates immediately for responsiveness; persistence handled asynchronously by listener.
             task.setCompleted(isChecked);
             holder.textTaskTitle.setAlpha(isChecked ? 0.6f : 1f);
             if (listener != null) listener.onTaskCheckedChanged(task, isChecked);
@@ -89,6 +101,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
         });
 
         holder.buttonShare.setOnClickListener(v -> {
+            // Android chooser keeps sharing target flexible (messaging, email, notes apps).
             String title = task.getTitle() != null ? task.getTitle() : "";
             String due = task.getDueTime() != null ? task.getDueTime() : "";
             String text = v.getContext().getString(R.string.task_shared_text, title, due);

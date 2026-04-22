@@ -30,6 +30,7 @@ public final class ReminderUtils {
     }
 
     private static void ensureChannel(Context context) {
+        // Create the notification channel once on Android O+ so reminders can be displayed.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
@@ -46,6 +47,7 @@ public final class ReminderUtils {
 
     /** Generic API to show a reminder notification immediately. */
     public static void showReminderNotification(Context context, String title, String message) {
+        // Build a safe notification payload even when title/message are missing.
         if (context == null) return;
         ensureChannel(context);
         String finalTitle = title != null && !title.trim().isEmpty()
@@ -71,8 +73,10 @@ public final class ReminderUtils {
      * (still schedules, but timing may be inexact) and never throws SecurityException.
      */
     public static void scheduleExactReminder(Context context, String title, String message, long triggerAtMillis, int requestCode) {
+        // Schedule a one-time alarm that triggers ReminderReceiver at the requested time.
         if (context == null) return;
         if (triggerAtMillis <= System.currentTimeMillis()) return;
+
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) return;
@@ -148,6 +152,7 @@ public final class ReminderUtils {
      * Convenience helper for tasks to schedule an exact reminder.
      */
     public static void scheduleTaskReminder(Context context, Task task, long triggerAtMillis) {
+        // Derive stable identifiers so the same task reminder updates predictably.
         if (context == null) return;
         if (task == null) return;
         String title = context.getString(R.string.app_name);
@@ -161,6 +166,7 @@ public final class ReminderUtils {
      * Title will be the task name and content text will be the reminder note.
      */
     public static void scheduleTaskReminder(Context context, Task task, long triggerAtMillis, String reminderText) {
+        // Prefer a user-provided reminder note when available.
         if (context == null) return;
         if (task == null) return;
         String title = task.getTitle() != null ? task.getTitle() : context.getString(R.string.app_name);
@@ -175,6 +181,7 @@ public final class ReminderUtils {
      * Convenience helper for events (including after-school) to schedule an exact reminder.
      */
     public static void scheduleEventReminder(Context context, Event event, long triggerAtMillis) {
+        // Schedule default event reminder content.
         if (context == null) return;
         if (event == null) return;
         String title = context.getString(R.string.app_name);
@@ -188,6 +195,7 @@ public final class ReminderUtils {
      * Title will be the event name and content text will be the reminder note.
      */
     public static void scheduleEventReminder(Context context, Event event, long triggerAtMillis, String reminderText) {
+        // Schedule event reminder using custom message text from the dialog.
         if (context == null) return;
         if (event == null) return;
         String title = event.getTitle() != null ? event.getTitle() : context.getString(R.string.app_name);
@@ -199,6 +207,7 @@ public final class ReminderUtils {
     }
 
     private static int buildStableCode(String id, String part1, String part2) {
+        // Hash core identity fields into a repeatable request code per reminder target.
         String safeId = id != null ? id : "";
         String p1 = part1 != null ? part1 : "";
         String p2 = part2 != null ? part2 : "";

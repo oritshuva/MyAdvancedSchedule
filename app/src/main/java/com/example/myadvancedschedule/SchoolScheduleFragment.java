@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// School schedule tab: renders day-based school lessons, loads data from Firestore,
+// and lets users open lesson editing from the daily list.
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -42,6 +45,7 @@ public class SchoolScheduleFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Inflate the schedule UI and initialize adapter, tabs, and helper actions.
         View view = inflater.inflate(R.layout.fragment_schedule, container, false);
         recyclerLessons = view.findViewById(R.id.recyclerLessons);
         emptyView = view.findViewById(R.id.emptyView);
@@ -68,11 +72,13 @@ public class SchoolScheduleFragment extends Fragment {
 
     @Override
     public void onResume() {
+        // Reload data on return so edits from other screens are reflected immediately.
         super.onResume();
         loadLessonsForCurrentDay();
     }
 
     private void setupDayTabs() {
+        // Build Monday-Friday tabs and preselect today's day for quick access.
         if (tabDays == null) return;
         tabDays.removeAllTabs();
         String[] days = getResources().getStringArray(R.array.days_array_english);
@@ -117,6 +123,7 @@ public class SchoolScheduleFragment extends Fragment {
     }
 
     private void setupHelpButton() {
+        // Show quick usage guidance for editing lessons from this screen.
         if (btnEditHelp == null) return;
         btnEditHelp.setVisibility(View.VISIBLE);
         btnEditHelp.setOnClickListener(v -> {
@@ -130,6 +137,7 @@ public class SchoolScheduleFragment extends Fragment {
     }
 
     private void configureHeaderForDay(String dayName) {
+        // Update header labels to match selected day and current date.
         String day = dayName != null ? dayName : ScheduleFragmentHelper.getTodayDayName();
         if (textDayTitle != null) {
             String title = getString(R.string.today_schedule_title, day);
@@ -143,6 +151,7 @@ public class SchoolScheduleFragment extends Fragment {
     }
 
     private void loadLessonsForCurrentDay() {
+        // Disable day switching while loading, then restore UI using the fetched result.
         String day = currentDayName != null ? currentDayName : ScheduleFragmentHelper.getTodayDayName();
         isLoadingLessons = true;
         if (tabDays != null) {
@@ -154,6 +163,7 @@ public class SchoolScheduleFragment extends Fragment {
         firestoreHelper.getLessonsForToday("school", day, new FirestoreHelper.OnLessonsLoadedListener() {
             @Override
             public void onLessonsLoaded(List<Lesson> lessons) {
+                // Abort UI updates if this fragment is no longer attached to an activity.
                 if (!isAdded()) return;
                 isLoadingLessons = false;
                 progressBar.setVisibility(View.GONE);

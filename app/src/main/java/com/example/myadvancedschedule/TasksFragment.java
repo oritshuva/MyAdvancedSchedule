@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Tasks tab controller: loads task data from Firestore, updates list UI state,
+// and coordinates add/edit/delete/completion/reminder actions.
+
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,6 +35,7 @@ public class TasksFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        // Inflate the tasks screen and wire all list interactions.
         View view = inflater.inflate(R.layout.fragment_tasks, container, false);
         recyclerTasks = view.findViewById(R.id.recyclerTasks);
         emptyView = view.findViewById(R.id.emptyView);
@@ -41,6 +45,7 @@ public class TasksFragment extends Fragment {
         adapter.setOnTaskActionListener(new TaskAdapter.OnTaskActionListener() {
             @Override
             public void onTaskCheckedChanged(Task task, boolean completed) {
+                // Persist completion state first, then update visible list if needed.
                 String uid = FirebaseAuth.getInstance().getCurrentUser() != null
                         ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
                 if (uid != null) {
@@ -67,6 +72,7 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onTaskDeleted(Task task) {
+                // Delete from backend, then reflect that deletion immediately in the adapter.
                 firestoreHelper.deleteTask(task.getId(), new FirestoreHelper.OnOperationCompleteListener() {
                     @Override
                     public void onSuccess() {
@@ -86,6 +92,7 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onTaskEdit(Task task) {
+                // Open the same dialog in edit mode and refresh item content on save.
                 AddTaskDialogFragment dialog = AddTaskDialogFragment.newInstance(task);
                 dialog.setOnTaskAddedListener((updatedTask, isEdit) -> {
                     if (isEdit) {
@@ -98,6 +105,7 @@ public class TasksFragment extends Fragment {
 
             @Override
             public void onTaskReminderRequested(Task task) {
+                // Collect reminder details from user, store them, then schedule system alarm.
                 if (!isAdded()) return;
                 ReminderDialogFragment dialog = ReminderDialogFragment.newInstance();
                 dialog.setOnReminderConfirmedListener((triggerAt, noteText) -> {
@@ -155,11 +163,13 @@ public class TasksFragment extends Fragment {
 
     @Override
     public void onResume() {
+        // Refresh tasks whenever the user returns to this tab.
         super.onResume();
         loadTasks();
     }
 
     private void loadTasks() {
+        // Read current task collection and update list + empty state.
         firestoreHelper.getTasks(new FirestoreHelper.OnTasksLoadedListener() {
             @Override
             public void onTasksLoaded(List<Task> tasks) {
@@ -179,6 +189,7 @@ public class TasksFragment extends Fragment {
     }
 
     private void toggleEmptyState() {
+        // Show placeholder when no tasks exist; otherwise show the RecyclerView.
         boolean empty = adapter.getItemCount() == 0;
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         recyclerTasks.setVisibility(empty ? View.GONE : View.VISIBLE);

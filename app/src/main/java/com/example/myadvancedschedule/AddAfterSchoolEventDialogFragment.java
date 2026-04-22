@@ -21,7 +21,8 @@ import java.util.Calendar;
 
 /**
  * Dialog for adding a simple after-school event backed by a Lesson with scheduleType="after_school".
- * Reuses the existing lessons/Firestore pipeline but exposes user-friendly event fields.
+ * Reusing the Lesson pipeline avoids maintaining a separate storage path while
+ * still presenting event-friendly fields (title/time/description/location).
  */
 public class AddAfterSchoolEventDialogFragment extends DialogFragment {
 
@@ -38,6 +39,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
     private OnEventSavedListener listener;
 
     public static AddAfterSchoolEventDialogFragment newInstance() {
+        // Factory method keeps creation style consistent with other app dialogs.
         return new AddAfterSchoolEventDialogFragment();
     }
 
@@ -48,6 +50,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+        // Build a focused input form so event creation can happen inline from schedule tab.
         View view = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_add_after_school_event, null, false);
 
@@ -70,6 +73,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
     }
 
     private void showTimePicker(final TextInputEditText target) {
+        // Constrained time picker improves input quality versus free-text time entry.
         Calendar now = Calendar.getInstance();
         int hour = now.get(Calendar.HOUR_OF_DAY);
         int minute = now.get(Calendar.MINUTE);
@@ -85,6 +89,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
     }
 
     private void saveEvent() {
+        // Validate required fields first to avoid storing partial after-school entries.
         String title = inputTitle.getText() != null ? inputTitle.getText().toString().trim() : "";
         String start = inputStartTime.getText() != null ? inputStartTime.getText().toString().trim() : "";
         String end = inputEndTime.getText() != null ? inputEndTime.getText().toString().trim() : "";
@@ -105,6 +110,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
         }
 
         String today = ScheduleFragmentHelper.getTodayDayName();
+        // Defaulting to current day matches user expectation when adding from today's tab context.
 
         Lesson lesson = new Lesson(
                 title,
@@ -121,6 +127,7 @@ public class AddAfterSchoolEventDialogFragment extends DialogFragment {
         helper.addLesson(uid, lesson, new FirestoreHelper.OnOperationCompleteListener() {
             @Override
             public void onSuccess() {
+                // Notify host to refresh list only after backend write is confirmed.
                 Toast.makeText(requireContext(), R.string.after_school_add_event_success, Toast.LENGTH_SHORT).show();
                 if (listener != null) listener.onEventSaved();
             }

@@ -1,5 +1,8 @@
 package com.example.myadvancedschedule;
 
+// Shared schedule-card adapter for school and after-school tabs, designed to
+// present mixed row types consistently while keeping interactions predictable.
+
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +17,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/** Adapter for lesson cards with a timetable-like layout. */
+/**
+ * Rich lesson-card adapter used by school and after-school schedule tabs.
+ * It normalizes multiple card modes (regular lesson, free period, after-school event)
+ * so both tabs can share one performant RecyclerView implementation.
+ */
 public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.LessonCardViewHolder> {
 
     public interface OnLessonShareListener {
@@ -40,6 +47,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     }
 
     public void setShareEnabled(boolean enabled, OnLessonShareListener listener) {
+        // Share is optional to keep interaction model context-specific per screen.
         this.shareEnabled = enabled;
         this.shareListener = listener;
     }
@@ -61,12 +69,14 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     }
 
     public void addLesson(Lesson lesson) {
+        // Incremental insert keeps UI responsive after single-item additions.
         if (lesson == null) return;
         lessons.add(lesson);
         notifyItemInserted(lessons.size() - 1);
     }
 
     public void removeLesson(Lesson lesson) {
+        // Remove by current list identity to preserve adapter consistency.
         if (lesson == null) return;
         int index = lessons.indexOf(lesson);
         if (index >= 0) {
@@ -76,9 +86,10 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
     }
 
     public void setLessons(List<Lesson> newLessons) {
+        // Full replace keeps adapter deterministic after async Firestore refreshes.
         lessons.clear();
         if (newLessons != null && !newLessons.isEmpty()) {
-            // Sort by period to build a clear daily timeline
+            // Sort by period so timeline reads top-to-bottom in chronological order.
             List<Lesson> sorted = new ArrayList<>(newLessons);
             Collections.sort(sorted, Comparator.comparingInt(Lesson::getPeriod));
 
@@ -86,7 +97,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             int expectedPeriod = sorted.get(0).getPeriod();
 
             for (Lesson lesson : sorted) {
-                // Insert "Free period" slots for missing periods (school schedule only)
+                // Fill missing periods with placeholders so users see gaps in their day.
                 while (expectedPeriod > 0 && expectedPeriod < lesson.getPeriod()) {
                     Lesson free = new Lesson();
                     free.setPeriod(expectedPeriod);
@@ -195,7 +206,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
         String end = lesson.getEndTime() != null ? lesson.getEndTime() : "";
         holder.textTime.setText(start.isEmpty() && end.isEmpty() ? "" : start + " – " + end);
 
-        // Keep subject indicator in a single consistent color defined in XML (no subject-based colors).
+        // Static indicator color avoids visual overload and keeps card hierarchy clean.
 
         if (shareEnabled && shareListener != null && !isFreePeriod) {
             holder.itemView.setOnLongClickListener(v -> {
@@ -206,7 +217,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             holder.itemView.setOnLongClickListener(null);
         }
 
-        // After-school events: show action row and wire up callbacks.
+        // Event action row is shown only for after-school cards to match user intent in that tab.
         if (isAfterSchool && afterSchoolListener != null) {
             holder.layoutAfterSchoolActions.setVisibility(View.VISIBLE);
 
@@ -226,7 +237,7 @@ public class LessonCardAdapter extends RecyclerView.Adapter<LessonCardAdapter.Le
             holder.layoutAfterSchoolActions.setVisibility(View.GONE);
         }
 
-        // Tapping a regular (non-free, non–after-school) lesson opens edit dialog.
+        // Regular lesson taps open editor; placeholders/events are intentionally non-editable here.
         if (!isAfterSchool && !isFreePeriod && lessonClickListener != null) {
             holder.itemView.setOnClickListener(v -> lessonClickListener.onLessonClick(lesson));
         } else {
